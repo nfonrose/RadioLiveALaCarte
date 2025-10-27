@@ -155,7 +155,7 @@ This glossary helps disambiguate terms which might have different meanings in di
 #### User (RLAC)
 An administrator of the RadioLiveALaCarte platform that can perform actions on it.
 
-#### Segment (RLAC)
+#### Segment (RLAC) aka Chunk
 Media file with a standardize usually short length (10s or 30s most of the time) captured, stored and processed by the RLALC platform.
 
 #### Media Datastore
@@ -172,13 +172,13 @@ A person using the GroovyMorningFM app to customize the way they listen to live 
 #### Custom schedule
 The schedule created by a [user](./README.md#user-gmfm). It is always based on a [predefined schedule](./README.md#predefined-schedule-of-a-program) of a Radio, and customized by switching some [Segments](./README.md#program-segment-aka-segment-gmfm) with others.
 
-#### Program
+#### Program (aka Emission FR)
 A consistent set of [Segments](./README.md#program-segment-aka-segment-gmfm) which usually have a clearly defined title, time of start, duration and cadence (daily, only on Saturdays, ...)
 
 #### Predefined schedule (of a Program)
 The order and duration of all the [Segments](./README.md#program-segment-aka-segment-gmfm) that make up a [Program](./README.md#program).
 
-#### Program-segment aka Segment (GMFM)
+#### Program-segment aka Segment (GMFM) (aka Chronique FR)
 Sub-section inside a [Program](./README.md#program) (for instance, the "3 minutes long economic segment" in the "France Inter" 7am-10am morning program).
 To avoid ambiguities with the Segment term in RLALC this can be referred to as "Program segment".
 

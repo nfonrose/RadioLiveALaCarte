@@ -1,0 +1,38 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.prtlabs.rlalc.domain'
+version = '0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(23)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Google Guice for dependency injection
+    implementation 'com.google.inject:guice:7.0.0'
+
+    // Jakarta Inject API
+    implementation 'jakarta.inject:jakarta.inject-api:2.0.1'
+
+    // Logs (SLF4J, LogBack, SpringBoot like colors)
+    implementation 'org.slf4j:slf4j-api:2.0.17'
+    implementation 'ch.qos.logback:logback-classic:1.5.20'
+    implementation 'org.fusesource.jansi:jansi:2.4.1'                             // For cross-platform ANSI color support
+
+    // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+}
+
+test {
+    useJUnitPlatform()
+}
+
