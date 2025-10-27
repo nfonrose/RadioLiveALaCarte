@@ -1,0 +1,58 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.prtlabs.rlalc.backend.services.mediacapture'
+version = '1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(23)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Google Guice for dependency injection
+    implementation 'com.google.inject:guice:7.0.0'
+
+    // Jakarta Inject API
+    implementation 'jakarta.inject:jakarta.inject-api:2.0.1'
+
+    // Logs (SLF4J, LogBack, SpringBoot like colors)
+    implementation 'org.slf4j:slf4j-api:2.0.17'
+    implementation 'ch.qos.logback:logback-classic:1.5.20'
+    implementation 'org.fusesource.jansi:jansi:2.4.1'                             // For cross-platform ANSI color support
+
+    // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+}
+
+application {
+    mainClass = 'com.prtlabs.rlalc.backend.mediacapture.entrypoint.EntryPoint'
+    applicationDefaultJvmArgs = ['-Djansi.passthrough=true']                      // To let ANSI colors passthrough when using `gradle run`
+}
+
+// Create a fatJar (without shadow, so not optimized) which can be used with 'java -jar ./build/libs/rlalc-backend-media-capture-service-1.0-SNAPSHOT.jar'
+jar {
+    manifest {
+        attributes 'Main-Class': application.mainClass
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+test {
+    useJUnitPlatform()
+}
+
+wrapper {
+    gradleVersion = '8.10'
+}

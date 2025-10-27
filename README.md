@@ -119,6 +119,18 @@ The Backend services for the GroovyMorningFM mobile application(s)
 
 
 # Contributing
+
+## Development tech stack
+
+### Java
+We use SDKMAN to install/choose which version of the Java ecosystem tools we use.
+
+Here are the versions used for the Java based components 
+```bash
+sdk use java 23.0.2-zulu
+sdk use gradle 8.10
+```
+
 Contributions are welcome! Please follow these steps:
 1. Fork the repository.
 2. Create a feature branch (`git checkout -b feature/your-feature`).
