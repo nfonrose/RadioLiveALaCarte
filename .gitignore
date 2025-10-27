@@ -1,22 +1,24 @@
-# Ignore Gradle project-specific cache directory
-.gradle
+# Path inside the now '@legacy' folder
+@legacy/0.RadioLiveALaCarteServer/app/src/main/resources/static/media
+@legacy/0.RadioLiveALaCarteServer/app/src/main/resources/static/ui
+@legacy/0.RadioLiveALaCarteServer/.idea
+@legacy/1.RadioLiveALaCarteApp/.vscode
+@legacy/@rd/0.segmentationProgrammesIntelligente/pythontest001/env
+@legacy/@rd/0.segmentationProgrammesIntelligente/pythontest001/src/env
+@legacy/@rd/0.segmentationProgrammesIntelligente/assets/entrainement-frinter-long.wav
+@legacy/@docs/assets/App-demo.mp4
+@legacy/@rd/2.INAMotCleVideo/env
+@legacy/@rd/2.INAMotCleVideo/.idea
+@legacy/@rd/2.INAMotCleVideo/**/*.mp4
+@legacy/@rd/2.INAMotCleVideo/**/*.mp3
+@legacy/@rd/2.INAMotCleVideo/__pycache__
+@legacy/0.RadioLiveALaCarteServer/@media
 
-# Ignore Gradle build output directory
+# Ignore Gradle project-specific cache directory and build output directory
+.gradle
 build
 gradle
 gradlew*
-0.RadioLiveALaCarteServer/app/src/main/resources/static/media
-0.RadioLiveALaCarteServer/app/src/main/resources/static/ui
-0.RadioLiveALaCarteServer/.idea
-1.RadioLiveALaCarteApp/.vscode
-@rd/0.segmentationProgrammesIntelligente/pythontest001/env
-@rd/0.segmentationProgrammesIntelligente/pythontest001/src/env
-@rd/0.segmentationProgrammesIntelligente/assets/entrainement-frinter-long.wav
-@docs/assets/App-demo.mp4
-@rd/2.INAMotCleVideo/env
-@rd/2.INAMotCleVideo/.idea
-@rd/2.INAMotCleVideo/**/*.mp4
-@rd/2.INAMotCleVideo/**/*.mp3
-@rd/2.INAMotCleVideo/__pycache__
-0.RadioLiveALaCarteServer/@media
+
+# Other misc files
 **/.DS_Store
