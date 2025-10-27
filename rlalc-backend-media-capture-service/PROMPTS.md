@@ -48,3 +48,18 @@ Add two Gradle tasks :
 
 ### ----------------------------
 In both tasks, can you display on the screen, on top of the existing "Building Docker image" / "Running Docker container", the equivalent CLI command please?
+
+
+
+
+
+
+## -------------------------------------------------------------------------------------------------------------------
+
+### ----------------------------
+Finalize the MediaCapturePlanning class so that it can be used to read the JSON content of the `grvfm-backend-media-capture-service.conf` file.
+
+I need to be able to read the content of the file using Jackson and the MediaCapturePlanning class.
+
+### ----------------------------
+Adjust the Java class now that I've added the 'startTimeUTCEpochSec' and 'durationSeconds' attributes to the JSON 

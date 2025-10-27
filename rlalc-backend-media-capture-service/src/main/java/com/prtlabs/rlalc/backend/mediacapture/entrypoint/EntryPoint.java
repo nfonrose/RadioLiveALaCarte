@@ -15,8 +15,6 @@ public class EntryPoint {
     private static final Logger logger = LoggerFactory.getLogger(EntryPoint.class);
     
     public static void main(String[] args) {
-        logger.info("Starting RLALC Media Capture Service ...");
-        
         try {
             // Create Guice injector
             Injector injector = Guice.createInjector(new MediaCaptureServiceGuiceModule());
@@ -25,7 +23,7 @@ public class EntryPoint {
             RLALCMediaCaptureService service = injector.getInstance(RLALCMediaCaptureService.class);
             service.start();
             
-            logger.info(" -> RLALC Media Capture Service started successfully");
+            logger.info(" -> RLALC Media Capture Service started successfully. On hold until killed");
         } catch (Exception e) {
             logger.error("  -> Error starting RLALC Media Capture Service", e);
             System.exit(1);

@@ -31,6 +31,11 @@ dependencies {
     implementation 'ch.qos.logback:logback-classic:1.5.20'
     implementation 'org.fusesource.jansi:jansi:2.4.1'                             // For cross-platform ANSI color support
 
+    // Jackson for JSON processing
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.16.1'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.16.1'
+
     // Testing
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
