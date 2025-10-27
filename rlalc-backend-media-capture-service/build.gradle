@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'com.prtlabs.rlalc.backend.services.mediacapture'
-version = '1.0-SNAPSHOT'
+version = '0.1-SNAPSHOT'
 
 java {
     toolchain {
@@ -17,6 +17,9 @@ repositories {
 }
 
 dependencies {
+
+    implementation project(":rlalc-backend-common")
+
     // Google Guice for dependency injection
     implementation 'com.google.inject:guice:7.0.0'
 
@@ -55,4 +58,35 @@ test {
 
 wrapper {
     gradleVersion = '8.10'
+}
+
+// Docker tasks
+task prtBuildDockerImage(type: Exec) {
+    dependsOn jar
+    group = 'docker'
+    description = 'Builds the Docker image for the application'
+
+    commandLine 'docker', 'build', '-t', "prt-rlalc-backend-media-capture-service:${version}", '.'
+
+    doFirst {
+        println "Building Docker image [prt-rlalc-backend-media-capture-service:${version}]"
+        println " -> Equivalent CLI command:"
+        println "      docker build -t prt-rlalc-backend-media-capture-service:${version} .\n"
+    }
+}
+
+task prtRunViaDocker(type: Exec) {
+    group = 'docker'
+    description = 'Runs the application using Docker'
+
+    commandLine 'docker', 'run', '--rm', '-p', '8080:8080', 
+                '-v', "${projectDir}/logs:/opt/prtlabs/radioLiveALaCarte/logs", 
+                '-v', "${projectDir}/media:/opt/prtlabs/radioLiveALaCarte/media",
+                "prt-rlalc-backend-media-capture-service:${version}"
+
+    doFirst {
+        println "Running Docker container [prt-rlalc-backend-media-capture-service:${version}]"
+        println " -> Equivalent CLI command:"
+        println "      docker run --rm -p 8080:8080 -v ${projectDir}/logs:/opt/prtlabs/radioLiveALaCarte/logs -v ${projectDir}/media:/opt/prtlabs/radioLiveALaCarte/media prt-rlalc-backend-media-capture-service:${version}\n"
+    }
 }
