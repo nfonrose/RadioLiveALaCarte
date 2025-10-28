@@ -131,3 +131,12 @@ Thanks to this, the `getChunkFilesForRecording(...)` will make it possible to tr
 The chunkList attribute will only contain data when at least one chunk has been saved.
 
 Make the `getChunkFilesForRecording(...)` method return a RecordingStatus class that contains the information described in the manifest above.
+
+
+
+
+
+## -------------------------------------------------------------------------------------------------------------------
+
+### ----------------------------
+Refactor the 'MediaCapturePlanning' class to conform with the 'rlalc-media-capture-batch.conf' new format which no longer contain the data element (all elements which were in the data element are now at the top level)

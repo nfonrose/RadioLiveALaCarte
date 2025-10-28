@@ -17,7 +17,9 @@ import java.util.List;
 public class MediaCapturePlanning {
 
     private Meta meta;
-    private Data data;
+
+    @JsonProperty("streamsToCapture")
+    private List<StreamToCapture> streamsToCapture;
 
     /**
      * Default constructor.
@@ -83,30 +85,21 @@ public class MediaCapturePlanning {
     }
 
     /**
-     * Gets the data.
-     * 
-     * @return the data
-     */
-    public Data getData() {
-        return data;
-    }
-
-    /**
-     * Sets the data.
-     * 
-     * @param data the data to set
-     */
-    public void setData(Data data) {
-        this.data = data;
-    }
-
-    /**
      * Gets the list of streams to capture.
      * 
      * @return the list of streams to capture
      */
     public List<StreamToCapture> getStreamsToCapture() {
-        return data != null ? data.getStreamsToCapture() : null;
+        return streamsToCapture;
+    }
+
+    /**
+     * Sets the list of streams to capture.
+     * 
+     * @param streamsToCapture the list of streams to capture to set
+     */
+    public void setStreamsToCapture(List<StreamToCapture> streamsToCapture) {
+        this.streamsToCapture = streamsToCapture;
     }
 
     /**
@@ -132,33 +125,6 @@ public class MediaCapturePlanning {
          */
         public void setFormat(String format) {
             this.format = format;
-        }
-    }
-
-    /**
-     * Data class.
-     */
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Data {
-        @JsonProperty("streamsToCapture")
-        private List<StreamToCapture> streamsToCapture;
-
-        /**
-         * Gets the list of streams to capture.
-         * 
-         * @return the list of streams to capture
-         */
-        public List<StreamToCapture> getStreamsToCapture() {
-            return streamsToCapture;
-        }
-
-        /**
-         * Sets the list of streams to capture.
-         * 
-         * @param streamsToCapture the list of streams to capture to set
-         */
-        public void setStreamsToCapture(List<StreamToCapture> streamsToCapture) {
-            this.streamsToCapture = streamsToCapture;
         }
     }
 
