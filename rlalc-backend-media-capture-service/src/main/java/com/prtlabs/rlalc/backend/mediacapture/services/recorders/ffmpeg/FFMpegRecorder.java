@@ -3,6 +3,8 @@ package com.prtlabs.rlalc.backend.mediacapture.services.recorders.ffmpeg;
 import com.prtlabs.rlalc.backend.mediacapture.services.recorders.IMediaRecorder;
 import com.prtlabs.rlalc.domain.ProgramDescriptor;
 import com.prtlabs.rlalc.domain.RecordingId;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.List;
@@ -10,6 +12,8 @@ import java.util.Map;
 
 
 public class FFMpegRecorder implements IMediaRecorder {
+
+    private static final Logger logger = LoggerFactory.getLogger(FFMpegRecorder.class);
 
     @Override
     public RecordingId record(ProgramDescriptor programDescriptor, Map<String, String> recorderSpecificParameters) {
@@ -21,4 +25,9 @@ public class FFMpegRecorder implements IMediaRecorder {
         return List.of();
     }
 
+    @Override
+    public void stopRecording(RecordingId recordingId) {
+        logger.info("Stopping recording with ID [{}]", recordingId);
+        // Implementation to stop the recording
+    }
 }

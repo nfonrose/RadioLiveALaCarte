@@ -63,3 +63,28 @@ I need to be able to read the content of the file using Jackson and the MediaCap
 
 ### ----------------------------
 Adjust the Java class now that I've added the 'startTimeUTCEpochSec' and 'durationSeconds' attributes to the JSON 
+
+
+
+
+
+## -------------------------------------------------------------------------------------------------------------------
+
+### ----------------------------
+Can you make sure the `RLALCMediaCaptureServiceImpl` class does enforce the duration of the Recording jobs please?
+
+Right now, it doesn't stop jobs.
+
+Here are some information about how to use Quartz for this job :
+```
+Quartz itself doesn’t manage durations — only triggers (start times and schedules).
+
+👉 To enforce a duration, you must handle it in your job logic, for example:
+
+Schedule a start job at the start time.
+
+Schedule a stop job (or cancellation) at start + duration.
+
+And obvisouly don't even start the job if startTime+duration is already in the past
+```
+

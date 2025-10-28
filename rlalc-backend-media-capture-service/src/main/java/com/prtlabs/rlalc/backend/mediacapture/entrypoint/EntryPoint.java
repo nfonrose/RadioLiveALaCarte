@@ -16,6 +16,8 @@ public class EntryPoint {
     
     public static void main(String[] args) {
         try {
+            logger.info("Starting RLALC Media Capture Service ...");
+
             // Create Guice injector
             Injector injector = Guice.createInjector(new MediaCaptureServiceGuiceModule());
             

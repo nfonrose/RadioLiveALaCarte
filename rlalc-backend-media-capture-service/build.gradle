@@ -36,6 +36,9 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.16.1'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.16.1'
 
+    // Quartz for job scheduling
+    implementation 'org.quartz-scheduler:quartz:2.3.2'
+
     // Testing
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'

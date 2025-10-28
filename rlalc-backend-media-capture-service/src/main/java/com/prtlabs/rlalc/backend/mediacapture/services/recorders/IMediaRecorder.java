@@ -12,5 +12,6 @@ public interface IMediaRecorder {
 
     RecordingId record(ProgramDescriptor programDescriptor, Map<String, String> recorderSpecificParameters);
     List<File> getChunkFilesForRecording(RecordingId recordingId);
+    void stopRecording(RecordingId recordingId);
 
 }

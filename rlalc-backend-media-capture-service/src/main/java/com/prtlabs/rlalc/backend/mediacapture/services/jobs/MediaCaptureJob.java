@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Quartz job that executes a media capture task.
@@ -21,12 +22,25 @@ public class MediaCaptureJob implements Job {
 
     private static final Logger logger = LoggerFactory.getLogger(MediaCaptureJob.class);
 
+    // Static map to store recording IDs by program UUID
+    private static final Map<String, RecordingId> recordingIds = new ConcurrentHashMap<>();
+
     // Job data map keys
     public static final String KEY_PROGRAM_UUID = "programUuid";
     public static final String KEY_PROGRAM_NAME = "programName";
     public static final String KEY_STREAM_URL = "streamUrl";
     public static final String KEY_DURATION_SECONDS = "durationSeconds";
     public static final String KEY_MEDIA_RECORDER = "mediaRecorder";
+
+    /**
+     * Get the recording ID for a program.
+     * 
+     * @param programUuid The UUID of the program
+     * @return The recording ID, or null if not found
+     */
+    public static RecordingId getRecordingId(String programUuid) {
+        return recordingIds.get(programUuid);
+    }
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
@@ -56,8 +70,11 @@ public class MediaCaptureJob implements Job {
             // Start recording
             RecordingId recordingId = mediaRecorder.record(programDescriptor, recorderParams);
 
-            logger.info("Media capture started successfully for program [{}] with recording ID",
-                    programName);
+            // Store the recording ID in the static map
+            recordingIds.put(programUuid, recordingId);
+
+            logger.info("Media capture started successfully for program [{}] with recording ID [{}]",
+                    programName, recordingId);
         } catch (Exception e) {
             logger.error("Failed to start media capture for program [{}] with UUID [{}]: {}",
                     programName, programUuid, e.getMessage(), e);

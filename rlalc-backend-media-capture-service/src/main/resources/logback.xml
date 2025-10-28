@@ -19,8 +19,8 @@
     </appender>
 
     <!-- Define at which level we log -->
-    <!--  - Only INFO by default -->
-    <root level="INFO">
+    <!--  - Only WARN by default -->
+    <root level="WARN">
         <appender-ref ref="CONSOLE" />
         <appender-ref ref="FILE" />
     </root>
