@@ -1,6 +1,8 @@
 package com.prtlabs.rlalc.backend.mediacapture.services.recorders.ffmpeg;
 
+import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
 import com.prtlabs.rlalc.backend.mediacapture.services.recorders.IMediaRecorder;
+import com.prtlabs.rlalc.backend.mediacapture.utils.RecordingManifestUtils;
 import com.prtlabs.rlalc.domain.ProgramDescriptor;
 import com.prtlabs.rlalc.domain.RecordingId;
 import org.slf4j.Logger;
@@ -59,6 +61,9 @@ public class FFMpegRecorder implements IMediaRecorder {
             // Create the full output path for ffmpeg
             String outputPathPattern = outputDir + "/" + recordingBaseName + "_chunk_%Y%m%d_%H%M%S.mp3";
 
+            // Create initial manifest file with PENDING status
+            RecordingManifestUtils.createOrUpdateManifest(outputDir, RecordingStatus.Status.PENDING, null, null);
+
             // Build the ffmpeg command
             List<String> command = new ArrayList<>();
             command.add("ffmpeg");
@@ -88,6 +93,9 @@ public class FFMpegRecorder implements IMediaRecorder {
             recordingPaths.put(recordingId, outputDir);
             recordingIds.put(recordingId, recordingUuid);
 
+            // Update manifest to ONGOING status
+            RecordingManifestUtils.updateStatus(outputDir, RecordingStatus.Status.ONGOING);
+
             logger.info("Recording started for program [{}] with recording ID [{}]", programDescriptor.name, recordingUuid);
             return recordingId;
 
@@ -98,29 +106,30 @@ public class FFMpegRecorder implements IMediaRecorder {
     }
 
     @Override
-    public List<File> getChunkFilesForRecording(RecordingId recordingId) {
+    public RecordingStatus getChunkFilesForRecording(RecordingId recordingId) {
         if (recordingId == null) {
             logger.warn("Cannot get chunk files for null recording ID");
-            return List.of();
+            return new RecordingStatus(RecordingStatus.Status.PENDING);
         }
 
         // Get the path for this recording
         String outputDir = recordingPaths.get(recordingId);
         if (outputDir == null) {
             logger.warn("No path found for recording ID");
-            return List.of();
+            return new RecordingStatus(RecordingStatus.Status.PENDING);
         }
 
         try {
             Path dirPath = Paths.get(outputDir);
             if (!Files.exists(dirPath)) {
                 logger.warn("Output directory does not exist: {}", outputDir);
-                return List.of();
+                return new RecordingStatus(RecordingStatus.Status.PENDING);
             }
 
             // Get all MP3 files in the directory
+            List<File> matchingFiles;
             try (Stream<Path> files = Files.list(dirPath)) {
-                List<File> matchingFiles = files
+                matchingFiles = files
                     .filter(Files::isRegularFile)
                     .filter(p -> p.getFileName().toString().endsWith(".mp3"))
                     .map(Path::toFile)
@@ -129,13 +138,55 @@ public class FFMpegRecorder implements IMediaRecorder {
                 if (matchingFiles.isEmpty()) {
                     logger.warn("No chunk files found for recording in directory: {}", outputDir);
                 }
-
-                return matchingFiles;
             }
+
+            // Check if there's an existing manifest file
+            RecordingStatus status = RecordingManifestUtils.readManifest(outputDir);
+
+            // If no manifest exists, create one based on the current state
+            if (status.getStatus() == RecordingStatus.Status.PENDING) {
+                // Determine the status based on the active processes
+                RecordingStatus.Status currentStatus;
+                if (activeProcesses.containsKey(recordingId)) {
+                    currentStatus = RecordingStatus.Status.ONGOING;
+                } else if (!matchingFiles.isEmpty()) {
+                    currentStatus = RecordingStatus.Status.COMPLETED;
+                } else {
+                    currentStatus = RecordingStatus.Status.PENDING;
+                }
+
+                // Create the manifest file
+                RecordingManifestUtils.createOrUpdateManifest(outputDir, currentStatus, null, matchingFiles);
+
+                // Update the status object
+                status.setStatus(currentStatus);
+                status.setChunkList(matchingFiles);
+            } else {
+                // Update the chunk list in the manifest if needed
+                if (!matchingFiles.equals(status.getChunkList())) {
+                    status.setChunkList(matchingFiles);
+                    RecordingManifestUtils.createOrUpdateManifest(
+                        outputDir, status.getStatus(), status.getErrors(), matchingFiles);
+                }
+            }
+
+            return status;
 
         } catch (IOException e) {
             logger.error("Error while searching for chunk files: {}", e.getMessage(), e);
-            return List.of();
+
+            // Create a status with an error
+            RecordingStatus status = new RecordingStatus(RecordingStatus.Status.PARTIAL_FAILURE);
+            status.addError("Error while searching for chunk files: " + e.getMessage());
+
+            // Try to update the manifest file
+            try {
+                RecordingManifestUtils.addError(outputDir, "Error while searching for chunk files: " + e.getMessage());
+            } catch (Exception ex) {
+                logger.error("Failed to update manifest with error: {}", ex.getMessage(), ex);
+            }
+
+            return status;
         }
     }
 
@@ -148,6 +199,9 @@ public class FFMpegRecorder implements IMediaRecorder {
 
         String recordingUuid = recordingIds.get(recordingId);
         logger.info("Stopping recording with ID [{}]", recordingUuid != null ? recordingUuid : "unknown");
+
+        // Get the path for this recording
+        String outputDir = recordingPaths.get(recordingId);
 
         Process process = activeProcesses.get(recordingId);
         if (process != null) {
@@ -162,6 +216,35 @@ public class FFMpegRecorder implements IMediaRecorder {
                     // If it didn't terminate gracefully, force it
                     logger.warn("FFMPEG process did not terminate gracefully, forcing termination");
                     process.destroyForcibly();
+
+                    // Update manifest with partial failure if we have a path
+                    if (outputDir != null) {
+                        RecordingManifestUtils.addError(outputDir, "FFMPEG process did not terminate gracefully");
+                    }
+                } else {
+                    // Update manifest with completed status if we have a path
+                    if (outputDir != null) {
+                        // Get the current chunk files to update the manifest
+                        List<File> chunkFiles = new ArrayList<>();
+                        try {
+                            Path dirPath = Paths.get(outputDir);
+                            if (Files.exists(dirPath)) {
+                                try (Stream<Path> files = Files.list(dirPath)) {
+                                    chunkFiles = files
+                                        .filter(Files::isRegularFile)
+                                        .filter(p -> p.getFileName().toString().endsWith(".mp3"))
+                                        .map(Path::toFile)
+                                        .collect(Collectors.toList());
+                                }
+                            }
+                        } catch (IOException e) {
+                            logger.error("Error while getting chunk files for manifest update: {}", e.getMessage(), e);
+                        }
+
+                        // Update the manifest
+                        RecordingManifestUtils.createOrUpdateManifest(
+                            outputDir, RecordingStatus.Status.COMPLETED, null, chunkFiles);
+                    }
                 }
 
                 // Remove from active recordings
@@ -170,10 +253,46 @@ public class FFMpegRecorder implements IMediaRecorder {
 
             } catch (InterruptedException e) {
                 logger.error("Error while stopping recording: {}", e.getMessage(), e);
+
+                // Update manifest with error if we have a path
+                if (outputDir != null) {
+                    RecordingManifestUtils.addError(outputDir, "Error while stopping recording: " + e.getMessage());
+                }
+
                 Thread.currentThread().interrupt();
             }
         } else {
             logger.warn("No active recording process found");
+
+            // If we have a path but no process, update the manifest anyway
+            if (outputDir != null) {
+                // Get the current chunk files
+                List<File> chunkFiles = new ArrayList<>();
+                try {
+                    Path dirPath = Paths.get(outputDir);
+                    if (Files.exists(dirPath)) {
+                        try (Stream<Path> files = Files.list(dirPath)) {
+                            chunkFiles = files
+                                .filter(Files::isRegularFile)
+                                .filter(p -> p.getFileName().toString().endsWith(".mp3"))
+                                .map(Path::toFile)
+                                .collect(Collectors.toList());
+                        }
+                    }
+                } catch (IOException e) {
+                    logger.error("Error while getting chunk files for manifest update: {}", e.getMessage(), e);
+                }
+
+                // If we have chunks, mark as completed, otherwise as partial failure
+                RecordingStatus.Status finalStatus = chunkFiles.isEmpty() ? 
+                    RecordingStatus.Status.PARTIAL_FAILURE : RecordingStatus.Status.COMPLETED;
+
+                if (finalStatus == RecordingStatus.Status.PARTIAL_FAILURE) {
+                    RecordingManifestUtils.addError(outputDir, "No active recording process found but recording was requested to stop");
+                } else {
+                    RecordingManifestUtils.createOrUpdateManifest(outputDir, finalStatus, null, chunkFiles);
+                }
+            }
         }
     }
 }

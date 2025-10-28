@@ -114,3 +114,20 @@ Update the FFMpegRecorder class to use ffmpeg to actually record the streams. Ta
 ```
 
 In the stopRecording, we need to cleanly kill ffmpeg to let it properly dispose resources (files, network connections, ...)
+
+### ----------------------------
+We need a way to track the status of recordings (pending, ongoing, completed, completedWithErrors). 
+We would like to implement this using:
+ - a JSON based `recording-manifest.json` file located where the chunks are located
+ - the manifest would contain: 
+   - a 'status' attribute: the status of the job (pending, ongoing, completed, partial_failure)
+   - an 'errors' optional attribute containing an array of "information about the error(s)"
+   - a 'chunkList' attribute with the list of chunks generated, defined by they path
+ - as there is no concurrency (single thread) for each recording, no need to deal with this problem. And since 
+the `getChunkFilesForRecording` method will make read-only access to the file, there is no need for concurrency handling
+with the recording logic either. 
+
+Thanks to this, the `getChunkFilesForRecording(...)` will make it possible to track the progress of the recording. 
+The chunkList attribute will only contain data when at least one chunk has been saved.
+
+Make the `getChunkFilesForRecording(...)` method return a RecordingStatus class that contains the information described in the manifest above.
