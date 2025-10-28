@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Test class for MediaCapturePlanning.
  */
-public class MediaCapturePlanningTest {
+public class MediaCapturePlanningHelperTest {
 
     @Test
     public void testLoadFromFile() throws IOException {
@@ -27,7 +27,7 @@ public class MediaCapturePlanningTest {
                   "Neither configuration file exists: " + configPath + " or " + alternateConfigPath);
 
         // Load the configuration
-        MediaCapturePlanning planning = MediaCapturePlanning.fromFile(configFile, alternateConfigFile);
+        MediaCapturePlanningDTO planning = MediaCapturePlanningHelper.fromFile(configFile, alternateConfigFile);
 
         // Verify the meta information
         assertNotNull(planning.getMeta(), "Meta information should not be null");
@@ -35,12 +35,12 @@ public class MediaCapturePlanningTest {
                      planning.getMeta().getFormat(), "Format does not match expected value");
 
         // Verify the streams to capture
-        List<MediaCapturePlanning.StreamToCapture> streams = planning.getStreamsToCapture();
+        List<MediaCapturePlanningDTO.StreamToCapture> streams = planning.getStreamsToCapture();
         assertNotNull(streams, "Streams to capture should not be null");
         assertEquals(2, streams.size(), "Expected 2 streams to capture");
 
         // Verify the first stream
-        MediaCapturePlanning.StreamToCapture stream1 = streams.get(0);
+        MediaCapturePlanningDTO.StreamToCapture stream1 = streams.get(0);
         assertEquals("France Inter", stream1.getTitle(), "First stream title does not match");
         assertEquals("7bf97a79-9612-411d-966b-657b6d77443e", stream1.getUuid(), "First stream UUID does not match");
         assertEquals("https://radiofrance.com/stream/franceinter", stream1.getStreamurl(), "First stream URL does not match");
@@ -48,7 +48,7 @@ public class MediaCapturePlanningTest {
         assertEquals("1200", stream1.getDurationSeconds(), "First stream duration does not match");
 
         // Verify the second stream
-        MediaCapturePlanning.StreamToCapture stream2 = streams.get(1);
+        MediaCapturePlanningDTO.StreamToCapture stream2 = streams.get(1);
         assertEquals("Europe 1", stream2.getTitle(), "Second stream title does not match");
         assertEquals("d84c5a96-5839-4d27-b033-c5f742832982", stream2.getUuid(), "Second stream UUID does not match");
         assertEquals("https://europe1.fr/stream", stream2.getStreamurl(), "Second stream URL does not match");
