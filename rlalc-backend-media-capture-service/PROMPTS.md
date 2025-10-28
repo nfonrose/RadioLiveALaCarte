@@ -88,3 +88,29 @@ Schedule a stop job (or cancellation) at start + duration.
 And obvisouly don't even start the job if startTime+duration is already in the past
 ```
 
+
+
+
+
+## -------------------------------------------------------------------------------------------------------------------
+
+### ----------------------------
+Update the FFMpegRecorder class to use ffmpeg to actually record the streams. Take inspiration from this code.
+
+```
+            String recordingBaseName = ... (based on ProgramDescriptor uuid dash name, cleaned to be fit for a filename, all lowercase)
+            String dataPrefix = ... (YYYY/MM/DD
+            outputPath = "/opt/prtlabs/rlalc/datastore/media/mp3/" + recordingBaseName + "/" + recordingBaseName + "_chunk_%Y%m%d_%H%M%S.mp3";
+            processBuilder = new ProcessBuilder(
+                    "ffmpeg",
+                    "-i", url,
+                    "-c:a", "libmp3lame",
+                    "-b:a", "160k",
+                    "-f", "mp3",
+                    "-f", "segment",
+                    "-segment_time", "10",
+                    "-ar", "32000",
+                    outputPath
+```
+
+In the stopRecording, we need to cleanly kill ffmpeg to let it properly dispose resources (files, network connections, ...)
