@@ -27,6 +27,8 @@ public class RLALCMediaCaptureServiceImpl implements RLALCMediaCaptureService {
 
     private static final Logger logger = LoggerFactory.getLogger(RLALCMediaCaptureServiceImpl.class);
 
+    private static final String PRTLABS_BASEDIR = System.getProperty("prt.rlalc.baseDir", "/opt/prtlabs") + "/radiolivealacarte/datastore/media/mp3/";
+
     @Inject
     private IMediaRecorder mediaRecorder;
 
@@ -48,7 +50,7 @@ public class RLALCMediaCaptureServiceImpl implements RLALCMediaCaptureService {
 
     private MediaCapturePlanningDTO readMediaCapturePlanning() throws PrtTechnicalException {
         try {
-            String configFilePath = "/opt/prtlabs/rlalc/conf/rlalc-media-capture-batch.conf";
+            String configFilePath = PRTLABS_BASEDIR +"/radiolivealacarte/conf/rlalc-media-capture-batch.conf";
             logger.info("Reading media capture planning from [{}]", configFilePath);
             return MediaCapturePlanningHelper.fromFile(configFilePath, "src/main/resources/rlalc-media-capture-batch.conf");
         } catch (PrtTechnicalRuntimeException ex) {

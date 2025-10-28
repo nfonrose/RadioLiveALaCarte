@@ -16,7 +16,6 @@ import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -27,7 +26,8 @@ import java.util.stream.Stream;
 public class FFMpegRecorder implements IMediaRecorder {
 
     private static final Logger logger = LoggerFactory.getLogger(FFMpegRecorder.class);
-    private static final String BASE_OUTPUT_DIR = "/opt/prtlabs/rlalc/datastore/media/mp3/";
+
+    private static final String PRTLABS_BASEDIR = System.getProperty("prt.rlalc.baseDir", "/opt/prtlabs") + "/radiolivealacarte/datastore/media/mp3/";
 
     // Maps to store recording information
     private static final Map<RecordingId, Process> activeProcesses = new ConcurrentHashMap<>();
@@ -54,7 +54,7 @@ public class FFMpegRecorder implements IMediaRecorder {
             String dataPrefix = today.format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
 
             // Create the output directory
-            String outputDir = BASE_OUTPUT_DIR + recordingBaseName;
+            String outputDir = PRTLABS_BASEDIR + recordingBaseName;
             Path outputPath = Paths.get(outputDir);
             Files.createDirectories(outputPath);
 
