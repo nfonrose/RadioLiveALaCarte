@@ -14,6 +14,10 @@ public class StaticallyDefined_MediaCapturePlanningLoader implements IMediaCaptu
         this.planningContent = Arrays.asList(new ProgramDescriptorDTO(null, title, streamURL, startTimeUTCEpochSec, durationSeconds));
     }
 
+    public StaticallyDefined_MediaCapturePlanningLoader(List<ProgramDescriptorDTO> planningContent) {
+        this.planningContent = new ArrayList<>(planningContent);
+    }
+
     @Override
     public MediaCapturePlanningDTO loadMediaCapturePlanning() {
         // Build a MediaCapturePlanning
