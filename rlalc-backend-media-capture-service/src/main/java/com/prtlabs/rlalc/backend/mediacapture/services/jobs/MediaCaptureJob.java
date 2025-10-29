@@ -1,8 +1,7 @@
 package com.prtlabs.rlalc.backend.mediacapture.services.jobs;
 
 import com.prtlabs.rlalc.backend.mediacapture.services.recorders.IMediaRecorder;
-import com.prtlabs.rlalc.domain.ProgramDescriptor;
-import com.prtlabs.rlalc.domain.RecordingId;
+import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
@@ -57,14 +56,13 @@ public class MediaCaptureJob implements Job {
 
         try {
             // Create program descriptor
-            ProgramDescriptor programDescriptor = new ProgramDescriptor(
+            ProgramDescriptorDTO programDescriptor = new ProgramDescriptorDTO(
                 programUuid,
                 streamUrl,
                 programName,
                 0L,
-                0L,
-                Optional.empty());
-            programDescriptor.chunkFileNamePrefix = Optional.of(programUuid);
+                0L
+            );
 
             // Create recorder specific parameters
             Map<String, String> recorderParams = new HashMap<>();

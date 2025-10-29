@@ -7,8 +7,8 @@ import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.IMed
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.dto.MediaCapturePlanningDTO;
 import com.prtlabs.rlalc.backend.mediacapture.services.jobs.MediaCaptureJob;
 import com.prtlabs.rlalc.backend.mediacapture.services.jobs.MediaCaptureStopJob;
-import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.dto.StreamToCaptureDTO;
 import com.prtlabs.rlalc.backend.mediacapture.services.recorders.IMediaRecorder;
+import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import com.prtlabs.rlalc.domain.RecordingId;
 import com.prtlabs.rlalc.exceptions.RLALCExceptionCodesEnum;
 import jakarta.inject.Inject;
@@ -39,7 +39,7 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
     @Override
     public void startMediaCapture() throws PrtTechnicalException {
         MediaCapturePlanningDTO planning = readMediaCapturePlanning();
-        logger.info("  -> MediaCapturePlanning read successfully. Found nb=[{}] streams to capture. Scheduling media capture tasks ...", planning.getStreamsToCapture().size());
+        logger.info("  -> MediaCapturePlanning read successfully. Found nb=[{}] streams to capture. Scheduling media capture tasks ...", planning.getProgramsToCapture().size());
         scheduleMediaCapture(planning);
         logger.info(" -> Scheduling done.");
     }
@@ -75,7 +75,7 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
             scheduler.start();
 
             // Schedule a job for each stream to capture
-            for (StreamToCaptureDTO stream : planning.getStreamsToCapture()) {
+            for (ProgramDescriptorDTO stream : planning.getProgramsToCapture()) {
                 String jobId = "capture-" + stream.getUuid();
                 String triggerId = "trigger-" + stream.getUuid();
 
@@ -86,7 +86,7 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
                 JobDataMap jobDataMap = new JobDataMap();
                 jobDataMap.put(MediaCaptureJob.KEY_PROGRAM_UUID, stream.getUuid());
                 jobDataMap.put(MediaCaptureJob.KEY_PROGRAM_NAME, stream.getTitle());
-                jobDataMap.put(MediaCaptureJob.KEY_STREAM_URL, stream.getStreamurl());
+                jobDataMap.put(MediaCaptureJob.KEY_STREAM_URL, stream.getStreamURL());
                 jobDataMap.put(MediaCaptureJob.KEY_DURATION_SECONDS, stream.getDurationSeconds());
                 jobDataMap.put(MediaCaptureJob.KEY_MEDIA_RECORDER, mediaRecorder);
 

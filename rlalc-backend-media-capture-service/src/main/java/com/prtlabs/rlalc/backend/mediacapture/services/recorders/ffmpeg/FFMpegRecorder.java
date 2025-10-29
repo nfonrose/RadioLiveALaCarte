@@ -3,8 +3,7 @@ package com.prtlabs.rlalc.backend.mediacapture.services.recorders.ffmpeg;
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
 import com.prtlabs.rlalc.backend.mediacapture.services.recorders.IMediaRecorder;
 import com.prtlabs.rlalc.backend.mediacapture.utils.RecordingManifestUtils;
-import com.prtlabs.rlalc.domain.ProgramDescriptor;
-import com.prtlabs.rlalc.domain.RecordingId;
+import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,8 +34,8 @@ public class FFMpegRecorder implements IMediaRecorder {
 
 
     @Override
-    public String record(ProgramDescriptor programDescriptor, Map<String, String> recorderSpecificParameters) {
-        logger.info("Starting recording for program [{}] with UUID [{}]", programDescriptor.getName(), programDescriptor.getUuid());
+    public String record(ProgramDescriptorDTO programDescriptor, Map<String, String> recorderSpecificParameters) {
+        logger.info("Starting recording for program [{}] with UUID [{}]", programDescriptor.getTitle(), programDescriptor.getUuid());
 
         try {
             // Create a RecordingId
@@ -44,7 +43,7 @@ public class FFMpegRecorder implements IMediaRecorder {
 
             // Create a clean filename from the program descriptor
             String recordingBaseName = programDescriptor.getUuid().toLowerCase() + "-" +
-                                      programDescriptor.getName().toLowerCase()
+                                      programDescriptor.getTitle().toLowerCase()
                                       .replaceAll("[^a-z0-9]", "_")
                                       .replaceAll("_+", "_");
 
@@ -94,11 +93,11 @@ public class FFMpegRecorder implements IMediaRecorder {
             // Update manifest to ONGOING status
             RecordingManifestUtils.updateStatus(outputDir, RecordingStatus.Status.ONGOING);
 
-            logger.info("Recording started for program [{}] with recording ID [{}]", programDescriptor.getName(), recordingId);
+            logger.info("Recording started for program [{}] with recording ID [{}]", programDescriptor.getTitle(), recordingId);
             return recordingId;
 
         } catch (IOException e) {
-            logger.error("Failed to start recording for program [{}]: {}", programDescriptor.getName(), e.getMessage(), e);
+            logger.error("Failed to start recording for program [{}]: {}", programDescriptor.getTitle(), e.getMessage(), e);
             return null;
         }
     }

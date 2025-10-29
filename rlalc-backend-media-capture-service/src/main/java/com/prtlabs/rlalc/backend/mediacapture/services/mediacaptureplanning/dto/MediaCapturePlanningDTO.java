@@ -2,6 +2,7 @@ package com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.dto
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,8 +22,8 @@ public class MediaCapturePlanningDTO {
 
     private Meta meta;
 
-    @JsonProperty("streamsToCapture")
-    private List<StreamToCaptureDTO> streamsToCapture;
+    @JsonProperty("programsToCapture")
+    private List<ProgramDescriptorDTO> programsToCapture;
 
     /**
      * Meta information class.
