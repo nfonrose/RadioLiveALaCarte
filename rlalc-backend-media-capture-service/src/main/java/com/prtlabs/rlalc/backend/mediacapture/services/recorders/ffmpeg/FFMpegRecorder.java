@@ -77,9 +77,14 @@ public class FFMpegRecorder implements IMediaRecorder {
             command.add("segment");
             command.add("-segment_time");
             command.add("10");
+            command.add("-strftime");      // To allow timestamp inside segment filenames
+            command.add("1");
             command.add("-ar");
             command.add("32000");
             command.add(outputPathPattern);
+
+            // Log the ffmpeg command with parameters
+            logger.info("Executing ffmpeg command: [{}]", String.join(" ", command));
 
             // Start the ffmpeg process
             ProcessBuilder processBuilder = new ProcessBuilder(command);
