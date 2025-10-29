@@ -2,11 +2,14 @@ package com.prtlabs.rlalc.backend.mediacapture.services;
 
 import com.prtlabs.exceptions.PrtTechnicalException;
 import com.prtlabs.exceptions.PrtTechnicalRuntimeException;
-import com.prtlabs.rlalc.backend.mediacapture.services.configuration.MediaCapturePlanningDTO;
-import com.prtlabs.rlalc.backend.mediacapture.services.configuration.MediaCapturePlanningHelper;
+import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.IMediaCapturePlanningService;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.dto.MediaCapturePlanningDTO;
 import com.prtlabs.rlalc.backend.mediacapture.services.jobs.MediaCaptureJob;
 import com.prtlabs.rlalc.backend.mediacapture.services.jobs.MediaCaptureStopJob;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.dto.StreamToCaptureDTO;
 import com.prtlabs.rlalc.backend.mediacapture.services.recorders.IMediaRecorder;
+import com.prtlabs.rlalc.domain.RecordingId;
 import com.prtlabs.rlalc.exceptions.RLALCExceptionCodesEnum;
 import jakarta.inject.Inject;
 import org.quartz.*;
@@ -18,28 +21,35 @@ import jakarta.inject.Singleton;
 
 import java.time.Instant;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * Implementation of the RLALCMediaCaptureService.
  */
 @Singleton
-public class RLALCMediaCaptureServiceImpl implements RLALCMediaCaptureService {
+public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
 
     private static final Logger logger = LoggerFactory.getLogger(RLALCMediaCaptureServiceImpl.class);
 
-    private static final String PRTLABS_BASEDIR = System.getProperty("prt.rlalc.baseDir", "/opt/prtlabs") + "/radiolivealacarte/datastore/media/mp3/";
 
-    @Inject
-    private IMediaRecorder mediaRecorder;
+    @Inject private IMediaRecorder mediaRecorder;
+    @Inject private IMediaCapturePlanningService mediaCapturePlanningService;
 
 
     @Override
-    public void start() throws PrtTechnicalException {
+    public void startMediaCapture() throws PrtTechnicalException {
         MediaCapturePlanningDTO planning = readMediaCapturePlanning();
         logger.info("  -> MediaCapturePlanning read successfully. Found nb=[{}] streams to capture. Scheduling media capture tasks ...", planning.getStreamsToCapture().size());
         scheduleMediaCapture(planning);
         logger.info(" -> Scheduling done.");
     }
+
+    @Override
+    public Map<RecordingId, RecordingStatus> getMediaCaptureStatus() {
+        return Map.of();
+    }
+
+
 
 
     //
@@ -50,9 +60,7 @@ public class RLALCMediaCaptureServiceImpl implements RLALCMediaCaptureService {
 
     private MediaCapturePlanningDTO readMediaCapturePlanning() throws PrtTechnicalException {
         try {
-            String configFilePath = PRTLABS_BASEDIR +"/radiolivealacarte/conf/rlalc-media-capture-batch.conf";
-            logger.info("Reading media capture planning from [{}]", configFilePath);
-            return MediaCapturePlanningHelper.fromFile(configFilePath, "src/main/resources/rlalc-media-capture-batch.conf");
+            return mediaCapturePlanningService.loadMediaCapturePlanning();
         } catch (PrtTechnicalRuntimeException ex) {
             throw new PrtTechnicalException(RLALCExceptionCodesEnum.RLAC_000_FailedToReadConfiguration.name(), "Failed to read media capture planning with message=["+ex.getMessage()+"]", ex);
         }
@@ -67,7 +75,7 @@ public class RLALCMediaCaptureServiceImpl implements RLALCMediaCaptureService {
             scheduler.start();
 
             // Schedule a job for each stream to capture
-            for (MediaCapturePlanningDTO.StreamToCapture stream : planning.getStreamsToCapture()) {
+            for (StreamToCaptureDTO stream : planning.getStreamsToCapture()) {
                 String jobId = "capture-" + stream.getUuid();
                 String triggerId = "trigger-" + stream.getUuid();
 
@@ -105,8 +113,10 @@ public class RLALCMediaCaptureServiceImpl implements RLALCMediaCaptureService {
                 if (startDate.before(now) && endDate.after(now)) {
                     // Adjust start date to now
                     startDate = now;
-                    logger.info("Media capture for stream [{}] has already started. Adjusting start time to current time: [{}]",
-                            stream.getTitle(), startDate);
+                    // Adjusting duration
+                    durationSeconds = (endDate.getTime()-startDate.getTime())/1000;
+                    logger.info("Media capture for stream [{}] has already started. Adjusting start time to current time [{}] with durationSeconds=[{}]",
+                            stream.getTitle(), startDate, durationSeconds);
                 }
 
                 // Create trigger for start job
@@ -143,7 +153,7 @@ public class RLALCMediaCaptureServiceImpl implements RLALCMediaCaptureService {
                 // Schedule the stop job
                 scheduler.scheduleJob(stopJobDetail, stopTrigger);
 
-                logger.info("    -> Media capture scheduled for stream [{}] at [{}] for a duration of [{}]secs", stream.getTitle(), startDate, stream.getDurationSeconds());
+                logger.info("    -> Media capture scheduled for stream [{}] at [{}] for a duration of [{}]secs", stream.getTitle(), startDate, durationSeconds);
             }
 
             logger.info("All media capture tasks scheduled successfully");

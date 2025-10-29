@@ -27,7 +27,7 @@ public class FFMpegRecorder implements IMediaRecorder {
 
     private static final Logger logger = LoggerFactory.getLogger(FFMpegRecorder.class);
 
-    private static final String PRTLABS_BASEDIR = System.getProperty("prt.rlalc.baseDir", "/opt/prtlabs") + "/radiolivealacarte/datastore/media/mp3/";
+    private static final String PRTLABS_BASEDIR = System.getProperty("prt.rlalc.baseDir", "/opt/prtlabs");
 
     // Maps to store recording information
     private static final Map<RecordingId, Process> activeProcesses = new ConcurrentHashMap<>();
@@ -54,7 +54,7 @@ public class FFMpegRecorder implements IMediaRecorder {
             String dataPrefix = today.format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
 
             // Create the output directory
-            String outputDir = PRTLABS_BASEDIR + recordingBaseName;
+            String outputDir = PRTLABS_BASEDIR + "/radiolivealacarte/datastore/media/mp3/" + recordingBaseName;
             Path outputPath = Paths.get(outputDir);
             Files.createDirectories(outputPath);
 
