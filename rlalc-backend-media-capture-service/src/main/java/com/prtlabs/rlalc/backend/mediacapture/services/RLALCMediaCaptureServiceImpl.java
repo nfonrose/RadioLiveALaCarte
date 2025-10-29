@@ -82,20 +82,6 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
                 logger.info(" - Scheduling media capture for stream [{}] with UUID [{}] at [{}] for [{}] seconds",
                         stream.getTitle(), stream.getUuid(), stream.getStartTimeUTCEpochSec(), stream.getDurationSeconds());
 
-                // Create job data map
-                JobDataMap jobDataMap = new JobDataMap();
-                jobDataMap.put(MediaCaptureJob.KEY_PROGRAM_UUID, stream.getUuid());
-                jobDataMap.put(MediaCaptureJob.KEY_PROGRAM_NAME, stream.getTitle());
-                jobDataMap.put(MediaCaptureJob.KEY_STREAM_URL, stream.getStreamURL());
-                jobDataMap.put(MediaCaptureJob.KEY_DURATION_SECONDS, stream.getDurationSeconds());
-                jobDataMap.put(MediaCaptureJob.KEY_MEDIA_RECORDER, mediaRecorder);
-
-                // Create job detail
-                JobDetail jobDetail = JobBuilder.newJob(MediaCaptureJob.class)
-                        .withIdentity(jobId)
-                        .usingJobData(jobDataMap)
-                        .build();
-
                 // Parse start time and duration
                 long startTimeEpochSec = stream.getStartTimeUTCEpochSec();
                 long durationSeconds = stream.getDurationSeconds();
@@ -109,7 +95,7 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
                     continue;
                 }
 
-                // Check if the job has already started but not ended
+                // Check if the job should have already started but not ended
                 if (startDate.before(now) && endDate.after(now)) {
                     // Adjust start date to now
                     startDate = now;
@@ -118,6 +104,20 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
                     logger.info("Media capture for stream [{}] has already started. Adjusting start time to current time [{}] with durationSeconds=[{}]",
                             stream.getTitle(), startDate, durationSeconds);
                 }
+
+                // Create job data map
+                JobDataMap jobDataMap = new JobDataMap();
+                jobDataMap.put(MediaCaptureJob.KEY_PROGRAM_UUID, stream.getUuid());
+                jobDataMap.put(MediaCaptureJob.KEY_PROGRAM_NAME, stream.getTitle());
+                jobDataMap.put(MediaCaptureJob.KEY_STREAM_URL, stream.getStreamURL());
+                jobDataMap.put(MediaCaptureJob.KEY_DURATION_SECONDS, durationSeconds);
+                jobDataMap.put(MediaCaptureJob.KEY_MEDIA_RECORDER, mediaRecorder);
+
+                // Create job detail
+                JobDetail jobDetail = JobBuilder.newJob(MediaCaptureJob.class)
+                    .withIdentity(jobId)
+                    .usingJobData(jobDataMap)
+                    .build();
 
                 // Create trigger for start job
                 Trigger startTrigger = TriggerBuilder.newTrigger()

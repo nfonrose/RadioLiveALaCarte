@@ -48,7 +48,7 @@ public class MediaCaptureJob implements Job {
         String programUuid = dataMap.getString(KEY_PROGRAM_UUID);
         String programName = dataMap.getString(KEY_PROGRAM_NAME);
         String streamUrl = dataMap.getString(KEY_STREAM_URL);
-        String durationSeconds = dataMap.getString(KEY_DURATION_SECONDS);
+        long   durationSeconds = dataMap.getLong(KEY_DURATION_SECONDS);
         IMediaRecorder mediaRecorder = (IMediaRecorder) dataMap.get(KEY_MEDIA_RECORDER);
 
         logger.info("Starting media capture for program [{}] with UUID [{}] from stream [{}] for [{}] seconds",
@@ -61,15 +61,11 @@ public class MediaCaptureJob implements Job {
                 streamUrl,
                 programName,
                 0L,
-                0L
+                durationSeconds
             );
 
-            // Create recorder specific parameters
-            Map<String, String> recorderParams = new HashMap<>();
-            recorderParams.put("durationSeconds", durationSeconds);
-
             // Start recording
-            String recordingId = mediaRecorder.record(programDescriptor, recorderParams);
+            String recordingId = mediaRecorder.record(programDescriptor, new HashMap<>());
 
             // Store the recording ID in the static map
             recordingIds.put(programUuid, recordingId);

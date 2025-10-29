@@ -24,6 +24,8 @@ public class RLALCMediaCaptureServiceIntegrationTest {
 
     private IRLALCMediaCaptureService mediaCaptureService;
 
+    private long startTimeEpochSec;
+    private long durationSeconds;
 
     @BeforeAll
     static void setUpAll() {
@@ -35,6 +37,13 @@ public class RLALCMediaCaptureServiceIntegrationTest {
 
     @BeforeEach
     public void setUp() {
+        // Calculate start time (10 seconds before now) and duration (25 seconds total)
+        startTimeEpochSec = Instant.now().getEpochSecond() - 10;
+        durationSeconds = 25; // 10 seconds before now + 15 seconds after now = 25 seconds total
+
+        logger.info("Setting up test with start time {} ({} seconds ago) and duration {} seconds",
+                startTimeEpochSec, Instant.now().getEpochSecond() - startTimeEpochSec, durationSeconds);
+
         // Configure the Guice injection for the test
         Injector injector = Guice.createInjector(new AbstractModule() {
             @Override
@@ -43,8 +52,8 @@ public class RLALCMediaCaptureServiceIntegrationTest {
                 bind(IMediaCapturePlanningLoader.class).toInstance(new StaticallyDefined_MediaCapturePlanningLoader(
                     "France Inter",
                     "http://direct.franceinter.fr/live/franceinter-midfi.mp3",
-                    1761605906,
-                    1200));
+                    startTimeEpochSec,
+                    durationSeconds));
                 bind(IMediaRecorder.class).to(FFMpegRecorder.class);
             }
         });
