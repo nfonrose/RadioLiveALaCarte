@@ -1,9 +1,11 @@
 package com.prtlabs.rlalc.domain;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 
 /**
  *
@@ -18,13 +20,25 @@ import java.util.Optional;
  */
 @Getter
 @Builder
-@AllArgsConstructor
 public class ProgramDescriptorDTO {
 
-    private String uuid;
-    private String title;
-    private String streamURL;
-    private long startTimeUTCEpochSec;
-    private long durationSeconds;
+    @JsonProperty("uuid")                 private final String uuid;
+    @JsonProperty("title")                private final String title;
+    @JsonProperty("streamURL")            private final String streamURL;
+    @JsonProperty("startTimeUTCEpochSec") private final long startTimeUTCEpochSec;
+    @JsonProperty("durationSeconds")      private final long durationSeconds;
+
+    /**
+     * This constructor should be created by Lombok but we need to apply the @TeevityDTO solution
+     * TODO - Check what the @TeevityDTO solution is actually
+     */
+    @JsonCreator
+    public ProgramDescriptorDTO(@JsonProperty("uuid") String uuid, @JsonProperty("title") String title, @JsonProperty("streamURL") String streamURL, @JsonProperty("startTimeUTCEpochSec") long startTimeUTCEpochSec, @JsonProperty("durationSeconds") long durationSeconds) {
+        this.uuid = uuid;
+        this.title = title;
+        this.streamURL = streamURL;
+        this.startTimeUTCEpochSec = startTimeUTCEpochSec;
+        this.durationSeconds = durationSeconds;
+    }
 
 }
