@@ -18,6 +18,6 @@ public class StreamToCaptureDTO {
     private String title;
     private String uuid;
     private String streamurl;
-    private String startTimeUTCEpochSec;
-    private String durationSeconds;
+    private long   startTimeUTCEpochSec;
+    private long   durationSeconds;
 }

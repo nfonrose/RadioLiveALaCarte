@@ -9,8 +9,8 @@ import java.util.Map;
 
 public interface IMediaRecorder {
 
-    RecordingId record(ProgramDescriptor programDescriptor, Map<String, String> recorderSpecificParameters);
-    RecordingStatus getChunkFilesForRecording(RecordingId recordingId);
-    void stopRecording(RecordingId recordingId);
+    String record(ProgramDescriptor programDescriptor, Map<String, String> recorderSpecificParameters);
+    RecordingStatus getChunkFilesForRecording(String recordingId);
+    void stopRecording(String recordingId);
 
 }

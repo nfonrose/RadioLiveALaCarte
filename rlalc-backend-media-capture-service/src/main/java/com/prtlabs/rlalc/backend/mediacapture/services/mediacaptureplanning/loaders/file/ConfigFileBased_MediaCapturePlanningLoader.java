@@ -2,7 +2,7 @@ package com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.loa
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.prtlabs.exceptions.PrtTechnicalRuntimeException;
-import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.IMediaCapturePlanningService;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.IMediaCapturePlanningLoader;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.dto.MediaCapturePlanningDTO;
 import com.prtlabs.rlalc.exceptions.RLALCExceptionCodesEnum;
 
@@ -13,7 +13,7 @@ import java.io.IOException;
  * Class responsible for reading and parsing the media capture planning configuration.
  * This class uses Jackson to read the JSON content of the grvfm-backend-media-capture-service.conf file.
  */
-public class ConfigFileBased_MediaCapturePlanningService implements IMediaCapturePlanningService {
+public class ConfigFileBased_MediaCapturePlanningLoader implements IMediaCapturePlanningLoader {
 
     private static final String PRTLABS_BASEDIR = System.getProperty("prt.rlalc.baseDir", "/opt/prtlabs");
 

@@ -3,7 +3,7 @@ package com.prtlabs.rlalc.backend.mediacapture.services;
 import com.prtlabs.exceptions.PrtTechnicalException;
 import com.prtlabs.exceptions.PrtTechnicalRuntimeException;
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
-import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.IMediaCapturePlanningService;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.IMediaCapturePlanningLoader;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.dto.MediaCapturePlanningDTO;
 import com.prtlabs.rlalc.backend.mediacapture.services.jobs.MediaCaptureJob;
 import com.prtlabs.rlalc.backend.mediacapture.services.jobs.MediaCaptureStopJob;
@@ -33,7 +33,7 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
 
 
     @Inject private IMediaRecorder mediaRecorder;
-    @Inject private IMediaCapturePlanningService mediaCapturePlanningService;
+    @Inject private IMediaCapturePlanningLoader mediaCapturePlanningService;
 
 
     @Override
@@ -97,8 +97,8 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
                         .build();
 
                 // Parse start time and duration
-                long startTimeEpochSec = Long.parseLong(stream.getStartTimeUTCEpochSec());
-                long durationSeconds = Long.parseLong(stream.getDurationSeconds());
+                long startTimeEpochSec = stream.getStartTimeUTCEpochSec();
+                long durationSeconds = stream.getDurationSeconds();
                 Date startDate = Date.from(Instant.ofEpochSecond(startTimeEpochSec));
                 Date endDate = Date.from(Instant.ofEpochSecond(startTimeEpochSec + durationSeconds));
 

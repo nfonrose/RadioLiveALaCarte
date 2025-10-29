@@ -23,7 +23,7 @@ public class MediaCaptureJob implements Job {
     private static final Logger logger = LoggerFactory.getLogger(MediaCaptureJob.class);
 
     // Static map to store recording IDs by program UUID
-    private static final Map<String, RecordingId> recordingIds = new ConcurrentHashMap<>();
+    private static final Map<String, String> recordingIds = new ConcurrentHashMap<>();
 
     // Job data map keys
     public static final String KEY_PROGRAM_UUID = "programUuid";
@@ -38,7 +38,7 @@ public class MediaCaptureJob implements Job {
      * @param programUuid The UUID of the program
      * @return The recording ID, or null if not found
      */
-    public static RecordingId getRecordingId(String programUuid) {
+    public static String getRecordingId(String programUuid) {
         return recordingIds.get(programUuid);
     }
 
@@ -57,10 +57,13 @@ public class MediaCaptureJob implements Job {
 
         try {
             // Create program descriptor
-            ProgramDescriptor programDescriptor = new ProgramDescriptor();
-            programDescriptor.uuid = programUuid;
-            programDescriptor.name = programName;
-            programDescriptor.streamURL = streamUrl;
+            ProgramDescriptor programDescriptor = new ProgramDescriptor(
+                programUuid,
+                streamUrl,
+                programName,
+                0L,
+                0L,
+                Optional.empty());
             programDescriptor.chunkFileNamePrefix = Optional.of(programUuid);
 
             // Create recorder specific parameters
@@ -68,7 +71,7 @@ public class MediaCaptureJob implements Job {
             recorderParams.put("durationSeconds", durationSeconds);
 
             // Start recording
-            RecordingId recordingId = mediaRecorder.record(programDescriptor, recorderParams);
+            String recordingId = mediaRecorder.record(programDescriptor, recorderParams);
 
             // Store the recording ID in the static map
             recordingIds.put(programUuid, recordingId);

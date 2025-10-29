@@ -30,22 +30,21 @@ public class FFMpegRecorder implements IMediaRecorder {
     private static final String PRTLABS_BASEDIR = System.getProperty("prt.rlalc.baseDir", "/opt/prtlabs");
 
     // Maps to store recording information
-    private static final Map<RecordingId, Process> activeProcesses = new ConcurrentHashMap<>();
-    private static final Map<RecordingId, String> recordingPaths = new ConcurrentHashMap<>();
-    private static final Map<RecordingId, String> recordingIds = new ConcurrentHashMap<>();
+    private static final Map<String, Process> activeProcesses = new ConcurrentHashMap<>();
+    private static final Map<String, String> recordingPaths = new ConcurrentHashMap<>();
+
 
     @Override
-    public RecordingId record(ProgramDescriptor programDescriptor, Map<String, String> recorderSpecificParameters) {
-        logger.info("Starting recording for program [{}] with UUID [{}]", programDescriptor.name, programDescriptor.uuid);
+    public String record(ProgramDescriptor programDescriptor, Map<String, String> recorderSpecificParameters) {
+        logger.info("Starting recording for program [{}] with UUID [{}]", programDescriptor.getName(), programDescriptor.getUuid());
 
         try {
             // Create a RecordingId
-            RecordingId recordingId = new RecordingId();
-            String recordingUuid = UUID.randomUUID().toString();
+            String recordingId = UUID.randomUUID().toString();
 
             // Create a clean filename from the program descriptor
-            String recordingBaseName = programDescriptor.uuid.toLowerCase() + "-" + 
-                                      programDescriptor.name.toLowerCase()
+            String recordingBaseName = programDescriptor.getUuid().toLowerCase() + "-" +
+                                      programDescriptor.getName().toLowerCase()
                                       .replaceAll("[^a-z0-9]", "_")
                                       .replaceAll("_+", "_");
 
@@ -68,7 +67,7 @@ public class FFMpegRecorder implements IMediaRecorder {
             List<String> command = new ArrayList<>();
             command.add("ffmpeg");
             command.add("-i");
-            command.add(programDescriptor.streamURL);
+            command.add(programDescriptor.getStreamURL());
             command.add("-c:a");
             command.add("libmp3lame");
             command.add("-b:a");
@@ -91,22 +90,21 @@ public class FFMpegRecorder implements IMediaRecorder {
             // Store the process and path information
             activeProcesses.put(recordingId, process);
             recordingPaths.put(recordingId, outputDir);
-            recordingIds.put(recordingId, recordingUuid);
 
             // Update manifest to ONGOING status
             RecordingManifestUtils.updateStatus(outputDir, RecordingStatus.Status.ONGOING);
 
-            logger.info("Recording started for program [{}] with recording ID [{}]", programDescriptor.name, recordingUuid);
+            logger.info("Recording started for program [{}] with recording ID [{}]", programDescriptor.getName(), recordingId);
             return recordingId;
 
         } catch (IOException e) {
-            logger.error("Failed to start recording for program [{}]: {}", programDescriptor.name, e.getMessage(), e);
+            logger.error("Failed to start recording for program [{}]: {}", programDescriptor.getName(), e.getMessage(), e);
             return null;
         }
     }
 
     @Override
-    public RecordingStatus getChunkFilesForRecording(RecordingId recordingId) {
+    public RecordingStatus getChunkFilesForRecording(String recordingId) {
         if (recordingId == null) {
             logger.warn("Cannot get chunk files for null recording ID");
             return new RecordingStatus(RecordingStatus.Status.PENDING);
@@ -191,14 +189,13 @@ public class FFMpegRecorder implements IMediaRecorder {
     }
 
     @Override
-    public void stopRecording(RecordingId recordingId) {
+    public void stopRecording(String recordingId) {
         if (recordingId == null) {
             logger.warn("Cannot stop recording with null recording ID");
             return;
         }
 
-        String recordingUuid = recordingIds.get(recordingId);
-        logger.info("Stopping recording with ID [{}]", recordingUuid != null ? recordingUuid : "unknown");
+        logger.info("Stopping recording with ID [{}]", recordingId != null ? recordingId : "unknown");
 
         // Get the path for this recording
         String outputDir = recordingPaths.get(recordingId);

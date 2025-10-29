@@ -30,7 +30,7 @@ public class MediaCaptureStopJob implements Job {
         IMediaRecorder mediaRecorder = (IMediaRecorder) dataMap.get(KEY_MEDIA_RECORDER);
 
         // Get the recording ID from the static map in MediaCaptureJob
-        RecordingId recordingId = MediaCaptureJob.getRecordingId(programUuid);
+        String recordingId = MediaCaptureJob.getRecordingId(programUuid);
 
         if (recordingId == null) {
             logger.warn("No recording ID found for program [{}] with UUID [{}]. The recording may have already been stopped or never started.",
