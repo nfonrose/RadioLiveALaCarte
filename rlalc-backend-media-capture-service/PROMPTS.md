@@ -140,3 +140,12 @@ Make the `getChunkFilesForRecording(...)` method return a RecordingStatus class 
 
 ### ----------------------------
 Refactor the 'MediaCapturePlanning' class to conform with the 'rlalc-media-capture-batch.conf' new format which no longer contain the data element (all elements which were in the data element are now at the top level)
+
+
+
+
+
+## -------------------------------------------------------------------------------------------------------------------
+
+### ----------------------------
+Use Lombok for all DTO classes in order to minize boilerplate code
