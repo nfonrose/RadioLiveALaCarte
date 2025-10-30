@@ -149,3 +149,18 @@ Refactor the 'MediaCapturePlanning' class to conform with the 'rlalc-media-captu
 
 ### ----------------------------
 Use Lombok for all DTO classes in order to minize boilerplate code
+
+
+
+
+
+## -------------------------------------------------------------------------------------------------------------------
+
+### ----------------------------
+When the ffmpeg command is executed by the FFMpegRecorder class, it doesn't look for errors reported by the process.
+
+The command was missing the "-strftime" (which I've added) and that was leading to an instant "Invalid segment filename template ..." at the ffmpeg level but this is completely ignored by the code.
+
+Can you add the error handling AND the full stdout/stderr error capture so that the problem can be logged and understood.
+
+The RecordingStatus status attribute must be set to PARTIAL_FAILURE and the `List<String> errors` attribute must contain the full stdout/stderr output of the command.
