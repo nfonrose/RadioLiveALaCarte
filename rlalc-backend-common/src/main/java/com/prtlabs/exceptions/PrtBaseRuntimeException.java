@@ -10,7 +10,15 @@ public class PrtBaseRuntimeException extends RuntimeException
         this.exceptionCode = exceptionCode;
     }
 
-    @Override
+    public PrtBaseRuntimeException(String exceptionCode, String message) {
+        this(exceptionCode, message, null);
+    }
+
+    public PrtBaseRuntimeException(String exceptionCode) {
+        this(exceptionCode, exceptionCode, null);
+    }
+
+        @Override
     public String getMessage() {
         return String.format("[%s] -%s", this.exceptionCode, super.getMessage());
     }

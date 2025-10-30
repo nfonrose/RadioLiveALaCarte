@@ -21,6 +21,7 @@ import jakarta.inject.Singleton;
 
 import java.time.Instant;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -45,7 +46,17 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
     }
 
     @Override
-    public Map<RecordingId, RecordingStatus> getMediaCaptureStatus() {
+    public List<String> getScheduledProgramIds() {
+        return List.of();
+    }
+
+    @Override
+    public Map<RecordingId, RecordingStatus> getRecordingStatuses() {
+        return Map.of();
+    }
+
+    @Override
+    public Map<RecordingId, RecordingStatus> getRecordingChunks(String programId, Instant day) {
         return Map.of();
     }
 
@@ -74,24 +85,26 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
             Scheduler scheduler = schedulerFactory.getScheduler();
             scheduler.start();
 
-            // Schedule a job for each stream to capture
-            for (ProgramDescriptorDTO stream : planning.getProgramsToCapture()) {
-                String jobId = "capture-" + stream.getUuid();
-                String triggerId = "trigger-" + stream.getUuid();
+            // Schedule a job for each Program to capture
+            //  - Create a Quartz startJob and a Quartz startTrigger to start the recording
+            //  - Create a Quartz stopJob and a Quartz stopTrigger to stop the recording
+            for (ProgramDescriptorDTO program : planning.getProgramsToCapture()) {
+                String startRecordingJobId = "capture-" + program.getUuid();
+                String startRecordingTriggerId = "trigger-" + program.getUuid();
 
-                logger.info(" - Scheduling media capture for stream [{}] with UUID [{}] at [{}] for [{}] seconds",
-                        stream.getTitle(), stream.getUuid(), stream.getStartTimeUTCEpochSec(), stream.getDurationSeconds());
+                logger.info(" - Scheduling media capture for program=[{}] with UUID [{}] at [{}] for [{}] seconds",
+                        program.getTitle(), program.getUuid(), program.getStartTimeUTCEpochSec(), program.getDurationSeconds());
 
                 // Parse start time and duration
-                long startTimeEpochSec = stream.getStartTimeUTCEpochSec();
-                long durationSeconds = stream.getDurationSeconds();
+                long startTimeEpochSec = program.getStartTimeUTCEpochSec();
+                long durationSeconds = program.getDurationSeconds();
                 Date startDate = Date.from(Instant.ofEpochSecond(startTimeEpochSec));
                 Date endDate = Date.from(Instant.ofEpochSecond(startTimeEpochSec + durationSeconds));
 
                 // Check if the job has already ended
                 Date now = new Date();
                 if (endDate.before(now)) {
-                    logger.info("    -> NOTE: Skipping media capture for stream [{}] as it has already ended with endTime=[{}]", stream.getTitle(), endDate);
+                    logger.info("    -> NOTE: Skipping media capture for program=[{}] as it has already ended with endTime=[{}]", program.getTitle(), endDate);
                     continue;
                 }
 
@@ -101,27 +114,27 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
                     startDate = now;
                     // Adjusting duration
                     durationSeconds = (endDate.getTime()-startDate.getTime())/1000;
-                    logger.info("Media capture for stream [{}] has already started. Adjusting start time to current time [{}] with durationSeconds=[{}]",
-                            stream.getTitle(), startDate, durationSeconds);
+                    logger.info("Media capture for program=[{}] has already started. Adjusting start time to current time [{}] with durationSeconds=[{}]",
+                            program.getTitle(), startDate, durationSeconds);
                 }
 
                 // Create job data map
                 JobDataMap jobDataMap = new JobDataMap();
-                jobDataMap.put(MediaCaptureJob.KEY_PROGRAM_UUID, stream.getUuid());
-                jobDataMap.put(MediaCaptureJob.KEY_PROGRAM_NAME, stream.getTitle());
-                jobDataMap.put(MediaCaptureJob.KEY_STREAM_URL, stream.getStreamURL());
+                jobDataMap.put(MediaCaptureJob.KEY_PROGRAM_UUID, program.getUuid());
+                jobDataMap.put(MediaCaptureJob.KEY_PROGRAM_NAME, program.getTitle());
+                jobDataMap.put(MediaCaptureJob.KEY_STREAM_URL, program.getStreamURL());
                 jobDataMap.put(MediaCaptureJob.KEY_DURATION_SECONDS, durationSeconds);
                 jobDataMap.put(MediaCaptureJob.KEY_MEDIA_RECORDER, mediaRecorder);
 
                 // Create job detail
                 JobDetail jobDetail = JobBuilder.newJob(MediaCaptureJob.class)
-                    .withIdentity(jobId)
+                    .withIdentity(startRecordingJobId)
                     .usingJobData(jobDataMap)
                     .build();
 
                 // Create trigger for start job
                 Trigger startTrigger = TriggerBuilder.newTrigger()
-                        .withIdentity(triggerId)
+                        .withIdentity(startRecordingTriggerId)
                         .startAt(startDate)
                         .build();
 
@@ -129,31 +142,31 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
                 scheduler.scheduleJob(jobDetail, startTrigger);
 
                 // Create job detail for stop job
-                String stopJobId = "stop-" + stream.getUuid();
-                String stopTriggerId = "stop-trigger-" + stream.getUuid();
+                String stopRecordingJobId = "stop-" + program.getUuid();
+                String stopRecordingTriggerId = "stop-trigger-" + program.getUuid();
 
                 // Create job data map for stop job
                 JobDataMap stopJobDataMap = new JobDataMap();
-                stopJobDataMap.put(MediaCaptureStopJob.KEY_PROGRAM_UUID, stream.getUuid());
-                stopJobDataMap.put(MediaCaptureStopJob.KEY_PROGRAM_NAME, stream.getTitle());
+                stopJobDataMap.put(MediaCaptureStopJob.KEY_PROGRAM_UUID, program.getUuid());
+                stopJobDataMap.put(MediaCaptureStopJob.KEY_PROGRAM_NAME, program.getTitle());
                 stopJobDataMap.put(MediaCaptureStopJob.KEY_MEDIA_RECORDER, mediaRecorder);
 
                 // Create job detail for stop job
                 JobDetail stopJobDetail = JobBuilder.newJob(MediaCaptureStopJob.class)
-                        .withIdentity(stopJobId)
+                        .withIdentity(stopRecordingJobId)
                         .usingJobData(stopJobDataMap)
                         .build();
 
                 // Create trigger for stop job
                 Trigger stopTrigger = TriggerBuilder.newTrigger()
-                        .withIdentity(stopTriggerId)
+                        .withIdentity(stopRecordingTriggerId)
                         .startAt(endDate)
                         .build();
 
                 // Schedule the stop job
                 scheduler.scheduleJob(stopJobDetail, stopTrigger);
 
-                logger.info("    -> Media capture scheduled for stream [{}] at [{}] for a duration of [{}]secs", stream.getTitle(), startDate, durationSeconds);
+                logger.info("    -> Media capture scheduled for stream [{}] at [{}] for a duration of [{}]secs", program.getTitle(), startDate, durationSeconds);
             }
 
             logger.info("All media capture tasks scheduled successfully");

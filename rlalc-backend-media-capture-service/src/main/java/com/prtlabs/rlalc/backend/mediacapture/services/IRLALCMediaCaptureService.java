@@ -4,6 +4,8 @@ import com.prtlabs.exceptions.PrtTechnicalException;
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
 import com.prtlabs.rlalc.domain.RecordingId;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -19,6 +21,8 @@ public interface IRLALCMediaCaptureService {
     /**
      * Get the current status of the service
      */
-    Map<RecordingId, RecordingStatus> getMediaCaptureStatus();
+    List<String> getScheduledProgramIds();
+    Map<RecordingId, RecordingStatus> getRecordingStatuses();
+    Map<RecordingId, RecordingStatus> getRecordingChunks(String programId, Instant day);
 
 }

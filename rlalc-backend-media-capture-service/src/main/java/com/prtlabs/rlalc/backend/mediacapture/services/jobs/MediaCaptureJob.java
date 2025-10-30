@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -65,7 +64,7 @@ public class MediaCaptureJob implements Job {
             );
 
             // Start recording
-            String recordingId = mediaRecorder.record(programDescriptor, new HashMap<>());
+            String recordingId = mediaRecorder.startRecording(programDescriptor, new HashMap<>());
 
             // Store the recording ID in the static map
             recordingIds.put(programUuid, recordingId);
