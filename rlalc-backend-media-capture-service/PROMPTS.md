@@ -164,3 +164,24 @@ The command was missing the "-strftime" (which I've added) and that was leading 
 Can you add the error handling AND the full stdout/stderr error capture so that the problem can be logged and understood.
 
 The RecordingStatus status attribute must be set to PARTIAL_FAILURE and the `List<String> errors` attribute must contain the full stdout/stderr output of the command.
+
+
+
+
+
+## -------------------------------------------------------------------------------------------------------------------
+
+### ----------------------------
+Can you implement the following methods inside the `RLALCMediaCaptureServiceImpl` class?
+
+    List<String> getScheduledProgramIds();
+
+### ----------------------------
+Can you implement the following methods inside the `RLALCMediaCaptureServiceImpl` class?
+
+    Map<RecordingId, RecordingStatus> getRecordingStatuses();
+
+### ----------------------------
+Can you implement the following methods inside the `RLALCMediaCaptureServiceImpl` class?
+
+    Map<RecordingId, RecordingStatus> getRecordingChunks(String programId, Instant day);

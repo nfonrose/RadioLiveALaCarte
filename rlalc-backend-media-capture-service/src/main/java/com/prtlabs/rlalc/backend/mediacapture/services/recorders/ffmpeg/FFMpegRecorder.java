@@ -405,7 +405,29 @@ public class FFMpegRecorder implements IMediaRecorder {
 
     @Override
     public List<RecordingStatus> getRecordingStatuses() {
-        return List.of();
+        List<RecordingStatus> statuses = new ArrayList<>();
+
+        // Iterate through all recording paths and read their manifests
+        for (Map.Entry<String, String> entry : recordingPaths.entrySet()) {
+            String recordingId = entry.getKey();
+            String outputDir = entry.getValue();
+
+            try {
+                // Read the manifest file to get the recording status
+                RecordingStatus status = RecordingManifestUtils.readManifest(outputDir);
+                if (status != null) {
+                    statuses.add(status);
+                }
+            } catch (Exception e) {
+                logger.error("Error reading manifest for recording {}: {}", recordingId, e.getMessage(), e);
+                // Create a status with error information
+                RecordingStatus errorStatus = new RecordingStatus(RecordingStatus.Status.PARTIAL_FAILURE);
+                errorStatus.addError("Failed to read manifest: " + e.getMessage());
+                statuses.add(errorStatus);
+            }
+        }
+
+        return statuses;
     }
 
 

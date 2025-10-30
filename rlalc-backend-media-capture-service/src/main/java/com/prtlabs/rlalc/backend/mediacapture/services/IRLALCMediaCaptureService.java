@@ -13,14 +13,14 @@ import java.util.Map;
  */
 public interface IRLALCMediaCaptureService {
     
-    /**
-     * Starts the media capture service.
-     */
+    //
+    // Starts the media capture service.
+    //
     void startMediaCapture() throws PrtTechnicalException;
 
-    /**
-     * Get the current status of the service
-     */
+    //
+    // Get the current status of the system and give access to the media chunks
+    //
     List<String> getScheduledProgramIds();
     Map<RecordingId, RecordingStatus> getRecordingStatuses();
     Map<RecordingId, RecordingStatus> getRecordingChunks(String programId, Instant day);

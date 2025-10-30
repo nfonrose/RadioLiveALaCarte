@@ -8,6 +8,7 @@ import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.dto.
 import com.prtlabs.rlalc.backend.mediacapture.services.jobs.MediaCaptureJob;
 import com.prtlabs.rlalc.backend.mediacapture.services.jobs.MediaCaptureStopJob;
 import com.prtlabs.rlalc.backend.mediacapture.services.recorders.IMediaRecorder;
+import com.prtlabs.rlalc.backend.mediacapture.utils.RecordingManifestUtils;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import com.prtlabs.rlalc.domain.RecordingId;
 import com.prtlabs.rlalc.exceptions.RLALCExceptionCodesEnum;
@@ -19,10 +20,13 @@ import org.slf4j.LoggerFactory;
 
 import jakarta.inject.Singleton;
 
+import java.io.File;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import org.quartz.impl.matchers.GroupMatcher;
 
 /**
  * Implementation of the RLALCMediaCaptureService.
@@ -47,17 +51,102 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
 
     @Override
     public List<String> getScheduledProgramIds() {
-        return List.of();
+        try {
+            // Get the scheduler
+            SchedulerFactory schedulerFactory = new StdSchedulerFactory();
+            Scheduler scheduler = schedulerFactory.getScheduler();
+
+            // Get all job keys in the default group
+            List<String> programIds = new ArrayList<>();
+            for (JobKey jobKey : scheduler.getJobKeys(GroupMatcher.anyGroup())) {
+                JobDetail jobDetail = scheduler.getJobDetail(jobKey);
+
+                // Only consider MediaCaptureJob jobs (not stop jobs)
+                if (jobDetail.getJobClass().equals(MediaCaptureJob.class)) {
+                    JobDataMap jobDataMap = jobDetail.getJobDataMap();
+                    String programUuid = jobDataMap.getString(MediaCaptureJob.KEY_PROGRAM_UUID);
+                    if (programUuid != null) {
+                        programIds.add(programUuid);
+                    }
+                }
+            }
+
+            return programIds;
+        } catch (SchedulerException e) {
+            logger.error("Failed to get scheduled program IDs: {}", e.getMessage(), e);
+            return List.of();
+        }
     }
 
     @Override
     public Map<RecordingId, RecordingStatus> getRecordingStatuses() {
-        return Map.of();
+        List<RecordingStatus> statuses = mediaRecorder.getRecordingStatuses();
+        Map<RecordingId, RecordingStatus> result = new java.util.HashMap<>();
+
+        // Convert the list to a map
+        int index = 0;
+        for (RecordingStatus status : statuses) {
+            // Create a unique ID for each recording status
+            // In a real implementation, you might want to use a more meaningful ID
+            RecordingId recordingId = new RecordingId("recording-" + index);
+            result.put(recordingId, status);
+            index++;
+        }
+
+        return result;
     }
 
     @Override
     public Map<RecordingId, RecordingStatus> getRecordingChunks(String programId, Instant day) {
-        return Map.of();
+        List<File> chunkFiles = mediaRecorder.getChunkFiles(programId, day);
+        Map<RecordingId, RecordingStatus> result = new java.util.HashMap<>();
+
+        if (chunkFiles == null || chunkFiles.isEmpty()) {
+            logger.info("No chunk files found for program ID [{}] on day [{}]", programId, day);
+            return result;
+        }
+
+        // Group chunks by their parent directory (which represents a recording session)
+        Map<String, List<File>> chunksByDirectory = new java.util.HashMap<>();
+        for (File chunk : chunkFiles) {
+            if (chunk == null) continue;
+
+            String parentDir = chunk.getParent();
+            if (parentDir == null) continue;
+
+            if (!chunksByDirectory.containsKey(parentDir)) {
+                chunksByDirectory.put(parentDir, new ArrayList<>());
+            }
+            chunksByDirectory.get(parentDir).add(chunk);
+        }
+
+        // Create a RecordingStatus for each directory
+        int index = 0;
+        for (Map.Entry<String, List<File>> entry : chunksByDirectory.entrySet()) {
+            String directory = entry.getKey();
+            List<File> chunks = entry.getValue();
+
+            // Read the manifest to get the recording status
+            RecordingStatus status = RecordingManifestUtils.readManifest(directory);
+
+            // If the manifest doesn't exist or doesn't have chunk information, update it with the chunks we found
+            if (status.getChunkList().isEmpty() && !chunks.isEmpty()) {
+                // Create a new RecordingStatus with the chunks we found
+                RecordingStatus newStatus = new RecordingStatus(
+                    status.getStatus(),
+                    status.getErrors(),
+                    chunks
+                );
+                status = newStatus;
+            }
+
+            // Create a unique ID for this recording
+            RecordingId recordingId = new RecordingId(programId + "-" + day.toString() + "-" + index);
+            result.put(recordingId, status);
+            index++;
+        }
+
+        return result;
     }
 
 
