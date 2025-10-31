@@ -1,7 +1,12 @@
 package com.prtlabs.rlalc.backend.mediacapture.services;
 
-import com.prtlabs.exceptions.PrtTechnicalException;
-import com.prtlabs.exceptions.PrtTechnicalRuntimeException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.prtlabs.rlalc.backend.mediacapture.services.recorders.ffmpeg.FFMpegRecorder;
+import com.prtlabs.rlalc.domain.ProgramId;
+import com.prtlabs.utils.dependencyinjection.guice.quartz.PrtGuiceQuartzJobFactory;
+import com.prtlabs.utils.exceptions.PrtTechnicalException;
+import com.prtlabs.utils.exceptions.PrtTechnicalRuntimeException;
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.IMediaCapturePlanningLoader;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.dto.MediaCapturePlanningDTO;
@@ -10,8 +15,8 @@ import com.prtlabs.rlalc.backend.mediacapture.services.jobs.MediaCaptureStopJob;
 import com.prtlabs.rlalc.backend.mediacapture.services.recorders.IMediaRecorder;
 import com.prtlabs.rlalc.backend.mediacapture.utils.RecordingManifestUtils;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
-import com.prtlabs.rlalc.domain.RecordingId;
 import com.prtlabs.rlalc.exceptions.RLALCExceptionCodesEnum;
+import com.prtlabs.utils.json.PrtJsonUtils;
 import jakarta.inject.Inject;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
@@ -21,12 +26,16 @@ import org.slf4j.LoggerFactory;
 import jakarta.inject.Singleton;
 
 import java.io.File;
+import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
 import org.quartz.impl.matchers.GroupMatcher;
+
 
 /**
  * Implementation of the RLALCMediaCaptureService.
@@ -36,9 +45,11 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
 
     private static final Logger logger = LoggerFactory.getLogger(RLALCMediaCaptureServiceImpl.class);
 
+    private static final ObjectMapper mapper = PrtJsonUtils.getFasterXmlObjectMapper();
 
     @Inject private IMediaRecorder mediaRecorder;
     @Inject private IMediaCapturePlanningLoader mediaCapturePlanningService;
+    @Inject private PrtGuiceQuartzJobFactory prtGuiceQuartzJobFactory;
 
 
     @Override
@@ -50,102 +61,49 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
     }
 
     @Override
-    public List<String> getScheduledProgramIds() {
+    public List<ProgramId> getScheduledProgramIds() {
         try {
             // Get the scheduler
             SchedulerFactory schedulerFactory = new StdSchedulerFactory();
             Scheduler scheduler = schedulerFactory.getScheduler();
 
             // Get all job keys in the default group
-            List<String> programIds = new ArrayList<>();
+            List<ProgramId> programIds = new ArrayList<>();
             for (JobKey jobKey : scheduler.getJobKeys(GroupMatcher.anyGroup())) {
-                JobDetail jobDetail = scheduler.getJobDetail(jobKey);
-
-                // Only consider MediaCaptureJob jobs (not stop jobs)
-                if (jobDetail.getJobClass().equals(MediaCaptureJob.class)) {
-                    JobDataMap jobDataMap = jobDetail.getJobDataMap();
-                    String programUuid = jobDataMap.getString(MediaCaptureJob.KEY_PROGRAM_UUID);
-                    if (programUuid != null) {
-                        programIds.add(programUuid);
+                try {
+                    JobDetail jobDetail = scheduler.getJobDetail(jobKey);
+                    // Only consider MediaCaptureJob jobs (not stop jobs)
+                    if (jobDetail.getJobClass().equals(MediaCaptureJob.class)) {
+                        JobDataMap jobDataMap = jobDetail.getJobDataMap();
+                        ProgramDescriptorDTO programDescriptor = PrtJsonUtils.getFasterXmlObjectMapper().readValue(jobDataMap.getString(MediaCaptureJob.KEY_PROGRAM_DESC_ASJSON), ProgramDescriptorDTO.class);
+                        if (programDescriptor.getUuid() != null) {
+                            programIds.add(programDescriptor.getUuid());
+                        }
                     }
+                } catch (Exception e) {
+                    logger.warn("  -> Failed to extract ProgramDescriptor from MediaCaptureJob with jobKey=["+jobKey+"]. Skipping it.");
                 }
             }
-
             return programIds;
         } catch (SchedulerException e) {
-            logger.error("Failed to get scheduled program IDs: {}", e.getMessage(), e);
+            logger.error("Failed to get scheduled program IDs with message=[{}]", e.getMessage(), e);
             return List.of();
         }
     }
 
     @Override
-    public Map<RecordingId, RecordingStatus> getRecordingStatuses() {
-        List<RecordingStatus> statuses = mediaRecorder.getRecordingStatuses();
-        Map<RecordingId, RecordingStatus> result = new java.util.HashMap<>();
-
-        // Convert the list to a map
-        int index = 0;
-        for (RecordingStatus status : statuses) {
-            // Create a unique ID for each recording status
-            // In a real implementation, you might want to use a more meaningful ID
-            RecordingId recordingId = new RecordingId("recording-" + index);
-            result.put(recordingId, status);
-            index++;
-        }
-
-        return result;
+    public Map<ProgramId, RecordingStatus> getRecordingStatuses() {
+        return mediaRecorder.getRecordingStatuses();
     }
 
     @Override
-    public Map<RecordingId, RecordingStatus> getRecordingChunks(String programId, Instant day) {
+    public List<URI> getRecordingChunks(ProgramId programId, Instant day) {
+        // Get the files list from the mediaRecorder
         List<File> chunkFiles = mediaRecorder.getChunkFiles(programId, day);
-        Map<RecordingId, RecordingStatus> result = new java.util.HashMap<>();
-
-        if (chunkFiles == null || chunkFiles.isEmpty()) {
-            logger.info("No chunk files found for program ID [{}] on day [{}]", programId, day);
-            return result;
-        }
-
-        // Group chunks by their parent directory (which represents a recording session)
-        Map<String, List<File>> chunksByDirectory = new java.util.HashMap<>();
-        for (File chunk : chunkFiles) {
-            if (chunk == null) continue;
-
-            String parentDir = chunk.getParent();
-            if (parentDir == null) continue;
-
-            if (!chunksByDirectory.containsKey(parentDir)) {
-                chunksByDirectory.put(parentDir, new ArrayList<>());
-            }
-            chunksByDirectory.get(parentDir).add(chunk);
-        }
-
-        // Create a RecordingStatus for each directory
-        int index = 0;
-        for (Map.Entry<String, List<File>> entry : chunksByDirectory.entrySet()) {
-            String directory = entry.getKey();
-            List<File> chunks = entry.getValue();
-
-            // Read the manifest to get the recording status
-            RecordingStatus status = RecordingManifestUtils.readManifest(directory);
-
-            // If the manifest doesn't exist or doesn't have chunk information, update it with the chunks we found
-            if (status.getChunkList().isEmpty() && !chunks.isEmpty()) {
-                // Create a new RecordingStatus with the chunks we found
-                RecordingStatus newStatus = new RecordingStatus(
-                    status.getStatus(),
-                    status.getErrors(),
-                    chunks
-                );
-                status = newStatus;
-            }
-
-            // Create a unique ID for this recording
-            RecordingId recordingId = new RecordingId(programId + "-" + day.toString() + "-" + index);
-            result.put(recordingId, status);
-            index++;
-        }
-
+        // Turn them into URIs
+        List<URI> result = chunkFiles.stream()
+            .map(f -> URI.create(f.getPath()))
+            .collect(Collectors.toList());
         return result;
     }
 
@@ -172,90 +130,76 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
             logger.info("Quartz scheduler initialization ...");
             SchedulerFactory schedulerFactory = new StdSchedulerFactory();
             Scheduler scheduler = schedulerFactory.getScheduler();
+            scheduler.setJobFactory(prtGuiceQuartzJobFactory);      // When Quartz Jobs are created (based on JobDetails), they are instantiated via our Guice aware factory
             scheduler.start();
 
             // Schedule a job for each Program to capture
             //  - Create a Quartz startJob and a Quartz startTrigger to start the recording
             //  - Create a Quartz stopJob and a Quartz stopTrigger to stop the recording
             for (ProgramDescriptorDTO program : planning.getProgramsToCapture()) {
-                String startRecordingJobId = "capture-" + program.getUuid();
-                String startRecordingTriggerId = "trigger-" + program.getUuid();
+                try {
+                    logger.info(" - Scheduling media capture for program=[{}] with UUID [{}] at [{}] for [{}] seconds", program.getTitle(), program.getUuid(), program.getStartTimeUTCEpochSec(), program.getDurationSeconds());
 
-                logger.info(" - Scheduling media capture for program=[{}] with UUID [{}] at [{}] for [{}] seconds",
-                        program.getTitle(), program.getUuid(), program.getStartTimeUTCEpochSec(), program.getDurationSeconds());
+                    // Parse start time and duration
+                    long startTimeEpochSec = program.getStartTimeUTCEpochSec();
+                    long durationSeconds = program.getDurationSeconds();
+                    Date startDate = Date.from(Instant.ofEpochSecond(startTimeEpochSec));
+                    Date endDate = Date.from(Instant.ofEpochSecond(startTimeEpochSec + durationSeconds));
 
-                // Parse start time and duration
-                long startTimeEpochSec = program.getStartTimeUTCEpochSec();
-                long durationSeconds = program.getDurationSeconds();
-                Date startDate = Date.from(Instant.ofEpochSecond(startTimeEpochSec));
-                Date endDate = Date.from(Instant.ofEpochSecond(startTimeEpochSec + durationSeconds));
+                    // Check if the job has already ended
+                    Date now = new Date();
+                    if (endDate.before(now)) {
+                        logger.info("    -> NOTE: Skipping media capture for program=[{}] as it has already ended with endTime=[{}]", program.getTitle(), endDate);
+                        continue;
+                    }
 
-                // Check if the job has already ended
-                Date now = new Date();
-                if (endDate.before(now)) {
-                    logger.info("    -> NOTE: Skipping media capture for program=[{}] as it has already ended with endTime=[{}]", program.getTitle(), endDate);
-                    continue;
-                }
-
-                // Check if the job should have already started but not ended
-                if (startDate.before(now) && endDate.after(now)) {
-                    // Adjust start date to now
-                    startDate = now;
-                    // Adjusting duration
-                    durationSeconds = (endDate.getTime()-startDate.getTime())/1000;
-                    logger.info("Media capture for program=[{}] has already started. Adjusting start time to current time [{}] with durationSeconds=[{}]",
-                            program.getTitle(), startDate, durationSeconds);
-                }
-
-                // Create job data map
-                JobDataMap jobDataMap = new JobDataMap();
-                jobDataMap.put(MediaCaptureJob.KEY_PROGRAM_UUID, program.getUuid());
-                jobDataMap.put(MediaCaptureJob.KEY_PROGRAM_NAME, program.getTitle());
-                jobDataMap.put(MediaCaptureJob.KEY_STREAM_URL, program.getStreamURL());
-                jobDataMap.put(MediaCaptureJob.KEY_DURATION_SECONDS, durationSeconds);
-                jobDataMap.put(MediaCaptureJob.KEY_MEDIA_RECORDER, mediaRecorder);
-
-                // Create job detail
-                JobDetail jobDetail = JobBuilder.newJob(MediaCaptureJob.class)
-                    .withIdentity(startRecordingJobId)
-                    .usingJobData(jobDataMap)
-                    .build();
-
-                // Create trigger for start job
-                Trigger startTrigger = TriggerBuilder.newTrigger()
+                    // Create the Quartz Start Job and its associate trigger
+                    // - Create the Job
+                    String startRecordingJobId = "capture-" + program.getUuid();
+                    String startRecordingTriggerId = "trigger-" + program.getUuid();
+                    JobDataMap jobDataMap = new JobDataMap();
+                    jobDataMap.put(MediaCaptureJob.KEY_PROGRAM_DESC_ASJSON, mapper.writeValueAsString(program));
+                    //    Deal with the case where the job should have already started but not ended (and compute the adjusted duration if so)
+                    if (startDate.before(now) && endDate.after(now)) {
+                        startDate = now;
+                        durationSeconds = (endDate.getTime() - startDate.getTime()) / 1000;
+                        jobDataMap.put(MediaCaptureJob.KEY_DURATION_SECONDS, durationSeconds);    // Store the information for the Quartz job
+                        logger.info("Media capture for program=[{}] has already started. Adjusting start time to current time [{}] with durationSeconds=[{}]", program.getTitle(), startDate, durationSeconds);
+                    }
+                    JobDetail jobDetail = JobBuilder.newJob(MediaCaptureJob.class)
+                        .withIdentity(startRecordingJobId)
+                        .usingJobData(jobDataMap)
+                        .build();
+                    // - Create trigger for start job
+                    Trigger startTrigger = TriggerBuilder.newTrigger()
                         .withIdentity(startRecordingTriggerId)
                         .startAt(startDate)
                         .build();
+                    // - Schedule the start job
+                    scheduler.scheduleJob(jobDetail, startTrigger);
 
-                // Schedule the start job
-                scheduler.scheduleJob(jobDetail, startTrigger);
-
-                // Create job detail for stop job
-                String stopRecordingJobId = "stop-" + program.getUuid();
-                String stopRecordingTriggerId = "stop-trigger-" + program.getUuid();
-
-                // Create job data map for stop job
-                JobDataMap stopJobDataMap = new JobDataMap();
-                stopJobDataMap.put(MediaCaptureStopJob.KEY_PROGRAM_UUID, program.getUuid());
-                stopJobDataMap.put(MediaCaptureStopJob.KEY_PROGRAM_NAME, program.getTitle());
-                stopJobDataMap.put(MediaCaptureStopJob.KEY_MEDIA_RECORDER, mediaRecorder);
-
-                // Create job detail for stop job
-                JobDetail stopJobDetail = JobBuilder.newJob(MediaCaptureStopJob.class)
+                    // Create the Quartz Stop Job and its associate trigger
+                    // - Create the Job
+                    String stopRecordingJobId = "stop-" + program.getUuid();
+                    String stopRecordingTriggerId = "stop-trigger-" + program.getUuid();
+                    JobDataMap stopJobDataMap = new JobDataMap();
+                    stopJobDataMap.put(MediaCaptureJob.KEY_PROGRAM_DESC_ASJSON, mapper.writeValueAsString(program));
+                    JobDetail stopJobDetail = JobBuilder.newJob(MediaCaptureStopJob.class)
                         .withIdentity(stopRecordingJobId)
                         .usingJobData(stopJobDataMap)
                         .build();
-
-                // Create trigger for stop job
-                Trigger stopTrigger = TriggerBuilder.newTrigger()
+                    // - Create trigger for stop job
+                    Trigger stopTrigger = TriggerBuilder.newTrigger()
                         .withIdentity(stopRecordingTriggerId)
                         .startAt(endDate)
                         .build();
+                    // - Schedule the stop job
+                    scheduler.scheduleJob(stopJobDetail, stopTrigger);
 
-                // Schedule the stop job
-                scheduler.scheduleJob(stopJobDetail, stopTrigger);
-
-                logger.info("    -> Media capture scheduled for stream [{}] at [{}] for a duration of [{}]secs", program.getTitle(), startDate, durationSeconds);
+                    logger.info("    -> Media capture scheduled for stream [{}] at [{}] for a duration of [{}]secs", program.getTitle(), startDate, durationSeconds);
+                } catch (JsonProcessingException e) {
+                    logger.warn("    -> Failed to schedule recording for stream [{}] with message=[{}]", program.getTitle(), e.getMessage());
+                }
             }
 
             logger.info("All media capture tasks scheduled successfully");

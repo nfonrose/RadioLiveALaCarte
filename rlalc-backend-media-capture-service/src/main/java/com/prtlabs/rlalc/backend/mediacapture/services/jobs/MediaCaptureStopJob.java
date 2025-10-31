@@ -1,7 +1,9 @@
 package com.prtlabs.rlalc.backend.mediacapture.services.jobs;
 
 import com.prtlabs.rlalc.backend.mediacapture.services.recorders.IMediaRecorder;
-import com.prtlabs.rlalc.domain.RecordingId;
+import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
+import com.prtlabs.utils.json.PrtJsonUtils;
+import jakarta.inject.Inject;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
@@ -16,39 +18,26 @@ public class MediaCaptureStopJob implements Job {
 
     private static final Logger logger = LoggerFactory.getLogger(MediaCaptureStopJob.class);
 
-    // Job data map keys
-    public static final String KEY_PROGRAM_UUID = "programUuid";
-    public static final String KEY_PROGRAM_NAME = "programName";
-    public static final String KEY_MEDIA_RECORDER = "mediaRecorder";
+    @Inject
+    private IMediaRecorder mediaRecorder;
+
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         JobDataMap dataMap = context.getJobDetail().getJobDataMap();
-
-        String programUuid = dataMap.getString(KEY_PROGRAM_UUID);
-        String programName = dataMap.getString(KEY_PROGRAM_NAME);
-        IMediaRecorder mediaRecorder = (IMediaRecorder) dataMap.get(KEY_MEDIA_RECORDER);
-
-        // Get the recording ID from the static map in MediaCaptureJob
-        String recordingId = MediaCaptureJob.getRecordingId(programUuid);
-
-        if (recordingId == null) {
-            logger.warn("No recording ID found for program [{}] with UUID [{}]. The recording may have already been stopped or never started.",
-                    programName, programUuid);
-            return;
-        }
-
-        logger.info("Stopping media capture for program [{}] with UUID [{}] and recording ID [{}]",
-                programName, programUuid, recordingId);
-
+        String debugProgramTitle = dataMap.getString(MediaCaptureJob.KEY_DEBUG_PROGRAM_TITLE);
         try {
+            // Get the program descriptor from the job details
+            ProgramDescriptorDTO programDescriptor = PrtJsonUtils.getFasterXmlObjectMapper().readValue(dataMap.getString(MediaCaptureJob.KEY_PROGRAM_DESC_ASJSON), ProgramDescriptorDTO.class);
+            // Stop the recording for this program
+            logger.info("Stopping media capture for program [{}] with UUID [{}]", programDescriptor.getTitle(), programDescriptor.getUuid());
             // Stop the recording
-            mediaRecorder.stopRecording(recordingId);
-            logger.info("Media capture stopped successfully for program [{}]", programName);
+            mediaRecorder.stopRecording(programDescriptor.getUuid());
+            logger.info("  -> Media capture stopped successfully for program [{}]", programDescriptor.getTitle());
         } catch (Exception e) {
-            logger.error("Failed to stop media capture for program [{}] with UUID [{}]: {}",
-                    programName, programUuid, e.getMessage(), e);
+            logger.error("Failed to stop media capture for program [{}] with message=[{}]", debugProgramTitle, e.getMessage(), e);
             throw new JobExecutionException("Failed to stop media capture", e);
         }
     }
+
 }

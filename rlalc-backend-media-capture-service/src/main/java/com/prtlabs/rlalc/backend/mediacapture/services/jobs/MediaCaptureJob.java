@@ -2,6 +2,8 @@ package com.prtlabs.rlalc.backend.mediacapture.services.jobs;
 
 import com.prtlabs.rlalc.backend.mediacapture.services.recorders.IMediaRecorder;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
+import com.prtlabs.utils.json.PrtJsonUtils;
+import jakarta.inject.Inject;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
@@ -10,8 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+
 
 /**
  * Quartz job that executes a media capture task.
@@ -20,61 +21,40 @@ public class MediaCaptureJob implements Job {
 
     private static final Logger logger = LoggerFactory.getLogger(MediaCaptureJob.class);
 
-    // Static map to store recording IDs by program UUID
-    private static final Map<String, String> recordingIds = new ConcurrentHashMap<>();
+    public  static final String KEY_PROGRAM_DESC_ASJSON = "programDescAsJson";
+    public  static final String KEY_DURATION_SECONDS    = "durationSeconds";
+    public  static final String KEY_DEBUG_PROGRAM_TITLE = "debug_programTitle";
 
-    // Job data map keys
-    public static final String KEY_PROGRAM_UUID = "programUuid";
-    public static final String KEY_PROGRAM_NAME = "programName";
-    public static final String KEY_STREAM_URL = "streamUrl";
-    public static final String KEY_DURATION_SECONDS = "durationSeconds";
-    public static final String KEY_MEDIA_RECORDER = "mediaRecorder";
+    @Inject private IMediaRecorder mediaRecorder;
 
-    /**
-     * Get the recording ID for a program.
-     * 
-     * @param programUuid The UUID of the program
-     * @return The recording ID, or null if not found
-     */
-    public static String getRecordingId(String programUuid) {
-        return recordingIds.get(programUuid);
-    }
 
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException {
         JobDataMap dataMap = context.getJobDetail().getJobDataMap();
-
-        String programUuid = dataMap.getString(KEY_PROGRAM_UUID);
-        String programName = dataMap.getString(KEY_PROGRAM_NAME);
-        String streamUrl = dataMap.getString(KEY_STREAM_URL);
-        long   durationSeconds = dataMap.getLong(KEY_DURATION_SECONDS);
-        IMediaRecorder mediaRecorder = (IMediaRecorder) dataMap.get(KEY_MEDIA_RECORDER);
-
-        logger.info("Starting media capture for program [{}] with UUID [{}] from stream [{}] for [{}] seconds",
-                programName, programUuid, streamUrl, durationSeconds);
-
+        String debugProgramTitle = dataMap.getString(KEY_DEBUG_PROGRAM_TITLE);
         try {
-            // Create program descriptor
-            ProgramDescriptorDTO programDescriptor = new ProgramDescriptorDTO(
-                programUuid,
-                streamUrl,
-                programName,
-                0L,
-                durationSeconds
-            );
+            // Get the program descriptor from the job details
+            // REMARK: It's a bad practice to pass the ProgramDescriptorDTO directly in the JobDataMap because of potential
+            //         serialization issues when using a persistent Job scheduler. This is why we go through a JSON representation
+            //         and the optional adjusted duration
+            ProgramDescriptorDTO programDescriptor = PrtJsonUtils.getFasterXmlObjectMapper().readValue(dataMap.getString(KEY_PROGRAM_DESC_ASJSON), ProgramDescriptorDTO.class);
+            // Update its duration if an "adjusted duration" is present (which is the case when the program has already started and the recording needs to be shorter)
+            if (dataMap.containsKey(KEY_DURATION_SECONDS)) {
+                long adjustedDurationSeconds = dataMap.getLong(KEY_DURATION_SECONDS);
+                programDescriptor = programDescriptor.builder()    // Adjust the duration in the ProgramDescriptor
+                    .durationSeconds(adjustedDurationSeconds)
+                    .build();
+            }
 
             // Start recording
-            String recordingId = mediaRecorder.startRecording(programDescriptor, new HashMap<>());
+            mediaRecorder.startRecording(programDescriptor, new HashMap<>());
 
             // Store the recording ID in the static map
-            recordingIds.put(programUuid, recordingId);
-
-            logger.info("Media capture started successfully for program [{}] with recording ID [{}]",
-                    programName, recordingId);
+            logger.info("Media capture started successfully for program [{}]", programDescriptor.getTitle());
         } catch (Exception e) {
-            logger.error("Failed to start media capture for program [{}] with UUID [{}]: {}",
-                    programName, programUuid, e.getMessage(), e);
-            throw new JobExecutionException("Failed to start media capture", e);
+            logger.error("Failed to start media capture for program [{}] with message=[{}]", debugProgramTitle, e.getMessage(), e);
+            throw new JobExecutionException("Failed to start media capture for ["+debugProgramTitle+"]", e);
         }
     }
+
 }

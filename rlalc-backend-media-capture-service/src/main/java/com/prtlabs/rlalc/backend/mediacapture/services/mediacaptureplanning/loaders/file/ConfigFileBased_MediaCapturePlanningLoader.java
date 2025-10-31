@@ -1,10 +1,11 @@
 package com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.loaders.file;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.prtlabs.exceptions.PrtTechnicalRuntimeException;
+import com.prtlabs.utils.exceptions.PrtTechnicalRuntimeException;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.IMediaCapturePlanningLoader;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.dto.MediaCapturePlanningDTO;
 import com.prtlabs.rlalc.exceptions.RLALCExceptionCodesEnum;
+import com.prtlabs.utils.json.PrtJsonUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,6 +17,9 @@ import java.io.IOException;
 public class ConfigFileBased_MediaCapturePlanningLoader implements IMediaCapturePlanningLoader {
 
     private static final String PRTLABS_BASEDIR = System.getProperty("prt.rlalc.baseDir", "/opt/prtlabs");
+
+    private static ObjectMapper mapper = PrtJsonUtils.getFasterXmlObjectMapper();
+
 
     /**
      * Loads the media capture planning from the specified configuration file path.
@@ -47,7 +51,6 @@ public class ConfigFileBased_MediaCapturePlanningLoader implements IMediaCapture
      * @return the loaded MediaCapturePlanning object
      */
     private static MediaCapturePlanningDTO fromFile(File configFile) throws PrtTechnicalRuntimeException {
-        ObjectMapper mapper = new ObjectMapper();
         try {
             return mapper.readValue(configFile, MediaCapturePlanningDTO.class);
         } catch (IOException exConfigFile) {

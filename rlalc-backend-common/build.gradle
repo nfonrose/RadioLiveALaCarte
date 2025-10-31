@@ -2,8 +2,9 @@ plugins {
     id 'java'
 }
 
-group = 'com.prtlabs.rlalc.domain'
+group = 'com.prtlabs.rlalc.common'
 version = '0.1-SNAPSHOT'
+
 
 java {
     toolchain {
@@ -23,6 +24,10 @@ dependencies {
     implementation 'jakarta.inject:jakarta.inject-api:2.0.1'
 
     // Needed to annotation the DTOs with annotations like @JsonCreator
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.16.0'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.16.0'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.0'
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.16.1'
 
     // Logs (SLF4J, LogBack, SpringBoot like colors)
@@ -35,6 +40,9 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
     testCompileOnly 'org.projectlombok:lombok:1.18.30'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+    // Quartz for job scheduling
+    implementation 'org.quartz-scheduler:quartz:2.3.2'
 
     // Testing
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'

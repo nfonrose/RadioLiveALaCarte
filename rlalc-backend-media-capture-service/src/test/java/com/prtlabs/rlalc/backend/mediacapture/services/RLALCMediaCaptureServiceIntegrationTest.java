@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
+import java.time.ZoneId;
 
 
 /**
@@ -54,7 +55,8 @@ public class RLALCMediaCaptureServiceIntegrationTest {
                     "France Inter",
                     "http://direct.franceinter.fr/live/franceinter-midfi.mp3",
                     startTimeEpochSec,
-                    durationSeconds));
+                    durationSeconds,
+                    ZoneId.of("Europe/Paris")));
                 bind(IMediaRecorder.class).to(FFMpegRecorder.class);
             }
         });

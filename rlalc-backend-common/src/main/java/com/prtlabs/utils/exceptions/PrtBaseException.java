@@ -1,24 +1,24 @@
-package com.prtlabs.exceptions;
+package com.prtlabs.utils.exceptions;
 
-public class PrtBaseRuntimeException extends RuntimeException
+public class PrtBaseException extends Exception
 {
 
     public final String exceptionCode;    // Mandatory for all PRTLabs project
 
-    public PrtBaseRuntimeException(String exceptionCode, String message, Throwable cause) {
+    public PrtBaseException(String exceptionCode, String message, Throwable cause) {
         super(message, cause);
         this.exceptionCode = exceptionCode;
     }
 
-    public PrtBaseRuntimeException(String exceptionCode, String message) {
+    public PrtBaseException(String exceptionCode, String message) {
         this(exceptionCode, message, null);
     }
 
-    public PrtBaseRuntimeException(String exceptionCode) {
+    public PrtBaseException(String exceptionCode) {
         this(exceptionCode, exceptionCode, null);
     }
 
-        @Override
+    @Override
     public String getMessage() {
         return String.format("[%s] -%s", this.exceptionCode, super.getMessage());
     }

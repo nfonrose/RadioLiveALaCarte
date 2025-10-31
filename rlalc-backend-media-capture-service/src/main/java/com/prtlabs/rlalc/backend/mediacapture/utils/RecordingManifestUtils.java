@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
+import com.prtlabs.utils.json.PrtJsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,7 +23,7 @@ public class RecordingManifestUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(RecordingManifestUtils.class);
     private static final String MANIFEST_FILENAME = "recording-manifest.json";
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = PrtJsonUtils.getFasterXmlObjectMapper();
 
     /**
      * Creates or updates the manifest file for a recording.
@@ -33,15 +34,14 @@ public class RecordingManifestUtils {
      * @param chunkList the list of chunk files
      * @return true if the manifest was successfully created/updated, false otherwise
      */
-    public static boolean createOrUpdateManifest(String outputDir, RecordingStatus.Status status, 
-                                                List<String> errors, List<File> chunkList) {
+    public static boolean createOrUpdateManifest(String outputDir, RecordingStatus.Status status, List<String> errors, List<File> chunkList) {
         try {
             Path manifestPath = Paths.get(outputDir, MANIFEST_FILENAME);
-            
+
             // Create the JSON object
             ObjectNode rootNode = objectMapper.createObjectNode();
             rootNode.put("status", status.toString().toLowerCase());
-            
+
             // Add errors if present
             if (errors != null && !errors.isEmpty()) {
                 ArrayNode errorsNode = rootNode.putArray("errors");
@@ -49,7 +49,7 @@ public class RecordingManifestUtils {
                     errorsNode.add(error);
                 }
             }
-            
+
             // Add chunk list
             ArrayNode chunksNode = rootNode.putArray("chunkList");
             if (chunkList != null) {
@@ -57,10 +57,10 @@ public class RecordingManifestUtils {
                     chunksNode.add(chunk.getPath());
                 }
             }
-            
+
             // Write to file with pretty printing
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(manifestPath.toFile(), rootNode);
-            
+
             return true;
         } catch (IOException e) {
             logger.error("Failed to create or update manifest file in {}: {}", outputDir, e.getMessage(), e);
@@ -77,16 +77,16 @@ public class RecordingManifestUtils {
     public static RecordingStatus readManifest(String outputDir) {
         try {
             Path manifestPath = Paths.get(outputDir, MANIFEST_FILENAME);
-            
+
             // If the manifest doesn't exist, return a default status
             if (!Files.exists(manifestPath)) {
                 logger.warn("Manifest file does not exist in {}", outputDir);
                 return new RecordingStatus(RecordingStatus.Status.PENDING);
             }
-            
+
             // Read the manifest file
             ObjectNode rootNode = (ObjectNode) objectMapper.readTree(manifestPath.toFile());
-            
+
             // Parse status
             RecordingStatus.Status status = RecordingStatus.Status.PENDING;
             if (rootNode.has("status")) {
@@ -97,7 +97,7 @@ public class RecordingManifestUtils {
                     logger.warn("Invalid status in manifest: {}", statusStr);
                 }
             }
-            
+
             // Parse errors
             List<String> errors = new ArrayList<>();
             if (rootNode.has("errors")) {
@@ -106,7 +106,7 @@ public class RecordingManifestUtils {
                     errors.add(errorsNode.get(i).asText());
                 }
             }
-            
+
             // Parse chunk list
             List<File> chunkList = new ArrayList<>();
             if (rootNode.has("chunkList")) {
@@ -115,7 +115,7 @@ public class RecordingManifestUtils {
                     chunkList.add(new File(chunksNode.get(i).asText()));
                 }
             }
-            
+
             return new RecordingStatus(status, errors, chunkList);
         } catch (IOException e) {
             logger.error("Failed to read manifest file in {}: {}", outputDir, e.getMessage(), e);
@@ -133,21 +133,21 @@ public class RecordingManifestUtils {
     public static boolean updateStatus(String outputDir, RecordingStatus.Status status) {
         try {
             Path manifestPath = Paths.get(outputDir, MANIFEST_FILENAME);
-            
+
             // If the manifest doesn't exist, create it
             if (!Files.exists(manifestPath)) {
                 return createOrUpdateManifest(outputDir, status, null, null);
             }
-            
+
             // Read the existing manifest
             ObjectNode rootNode = (ObjectNode) objectMapper.readTree(manifestPath.toFile());
-            
+
             // Update the status
             rootNode.put("status", status.toString().toLowerCase());
-            
+
             // Write back to file
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(manifestPath.toFile(), rootNode);
-            
+
             return true;
         } catch (IOException e) {
             logger.error("Failed to update status in manifest file in {}: {}", outputDir, e.getMessage(), e);
@@ -165,17 +165,17 @@ public class RecordingManifestUtils {
     public static boolean addError(String outputDir, String error) {
         try {
             Path manifestPath = Paths.get(outputDir, MANIFEST_FILENAME);
-            
+
             // If the manifest doesn't exist, create it with the error
             if (!Files.exists(manifestPath)) {
                 List<String> errors = new ArrayList<>();
                 errors.add(error);
                 return createOrUpdateManifest(outputDir, RecordingStatus.Status.PARTIAL_FAILURE, errors, null);
             }
-            
+
             // Read the existing manifest
             ObjectNode rootNode = (ObjectNode) objectMapper.readTree(manifestPath.toFile());
-            
+
             // Add the error
             ArrayNode errorsNode;
             if (rootNode.has("errors")) {
@@ -184,17 +184,58 @@ public class RecordingManifestUtils {
                 errorsNode = rootNode.putArray("errors");
             }
             errorsNode.add(error);
-            
+
             // Update the status to PARTIAL_FAILURE if it's not already
             rootNode.put("status", RecordingStatus.Status.PARTIAL_FAILURE.toString().toLowerCase());
-            
+
             // Write back to file
             objectMapper.writerWithDefaultPrettyPrinter().writeValue(manifestPath.toFile(), rootNode);
-            
+
             return true;
         } catch (IOException e) {
             logger.error("Failed to add error to manifest file in {}: {}", outputDir, e.getMessage(), e);
             return false;
         }
     }
+
+    /**
+     * Checks if a manifest file exists in the specified directory and has the expected status.
+     *
+     * @param outputDir      the directory where the recording chunks are stored
+     * @param expectedStatus the status to check for
+     * @return true if the manifest exists and has the expected status, false otherwise
+     */
+    public static boolean checkIfManifestExistAndHasStatus(String outputDir, RecordingStatus.Status expectedStatus) {
+        try {
+            Path manifestPath = Paths.get(outputDir, MANIFEST_FILENAME);
+
+            // Check if the manifest exists
+            if (!Files.exists(manifestPath)) {
+                logger.debug("Manifest file does not exist in {}", outputDir);
+                return false;
+            }
+
+            // Read the manifest file
+            ObjectNode rootNode = (ObjectNode) objectMapper.readTree(manifestPath.toFile());
+
+            // Check if the status matches the expected status
+            if (rootNode.has("status")) {
+                String statusStr = rootNode.get("status").asText().toUpperCase();
+                try {
+                    RecordingStatus.Status actualStatus = RecordingStatus.Status.valueOf(statusStr);
+                    return actualStatus == expectedStatus;
+                } catch (IllegalArgumentException e) {
+                    logger.warn("Invalid status in manifest: {}", statusStr);
+                    return false;
+                }
+            } else {
+                logger.debug("Manifest file in {} does not have a status field", outputDir);
+                return false;
+            }
+        } catch (IOException e) {
+            logger.error("Failed to read manifest file in {}: {}", outputDir, e.getMessage(), e);
+            return false;
+        }
+    }
+
 }

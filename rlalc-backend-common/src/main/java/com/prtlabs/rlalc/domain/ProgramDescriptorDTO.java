@@ -6,6 +6,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.SuperBuilder;
+
+import java.time.ZoneId;
 
 /**
  *
@@ -19,26 +22,28 @@ import lombok.RequiredArgsConstructor;
  *
  */
 @Getter
-@Builder
+@SuperBuilder
 public class ProgramDescriptorDTO {
 
-    @JsonProperty("uuid")                 private final String uuid;
+    @JsonProperty("uuid")                 private final ProgramId uuid;
     @JsonProperty("title")                private final String title;
     @JsonProperty("streamURL")            private final String streamURL;
     @JsonProperty("startTimeUTCEpochSec") private final long startTimeUTCEpochSec;
     @JsonProperty("durationSeconds")      private final long durationSeconds;
+    @JsonProperty("timeZone")             private final ZoneId timeZone;
 
     /**
      * This constructor should be created by Lombok but we need to apply the @TeevityDTO solution
      * TODO - Check what the @TeevityDTO solution is actually
      */
     @JsonCreator
-    public ProgramDescriptorDTO(@JsonProperty("uuid") String uuid, @JsonProperty("title") String title, @JsonProperty("streamURL") String streamURL, @JsonProperty("startTimeUTCEpochSec") long startTimeUTCEpochSec, @JsonProperty("durationSeconds") long durationSeconds) {
+    public ProgramDescriptorDTO(@JsonProperty("uuid") ProgramId uuid, @JsonProperty("title") String title, @JsonProperty("streamURL") String streamURL, @JsonProperty("startTimeUTCEpochSec") long startTimeUTCEpochSec, @JsonProperty("durationSeconds") long durationSeconds, @JsonProperty("timeZone") ZoneId timeZone) {
         this.uuid = uuid;
         this.title = title;
         this.streamURL = streamURL;
         this.startTimeUTCEpochSec = startTimeUTCEpochSec;
         this.durationSeconds = durationSeconds;
+        this.timeZone = timeZone;
     }
 
 }

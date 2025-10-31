@@ -6,6 +6,7 @@ plugins {
 group = 'com.prtlabs.rlalc.backend.services.mediacapture'
 version = '0.1-SNAPSHOT'
 
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(23)
@@ -36,6 +37,9 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.16.1'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.16.1'
 
+    // Common Java libraries
+    implementation "org.apache.commons:commons-lang3:3.19.0"
+
     // Quartz for job scheduling
     implementation 'org.quartz-scheduler:quartz:2.3.2'
 
@@ -49,6 +53,7 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
 }
+
 
 application {
     mainClass = 'com.prtlabs.rlalc.backend.mediacapture.entrypoint.EntryPoint'

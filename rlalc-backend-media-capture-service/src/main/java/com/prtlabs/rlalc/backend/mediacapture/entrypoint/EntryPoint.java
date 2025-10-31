@@ -2,7 +2,6 @@ package com.prtlabs.rlalc.backend.mediacapture.entrypoint;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.prtlabs.rlalc.backend.mediacapture.di.guice.MediaCaptureServiceGuiceModule;
 import com.prtlabs.rlalc.backend.mediacapture.services.IRLALCMediaCaptureService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

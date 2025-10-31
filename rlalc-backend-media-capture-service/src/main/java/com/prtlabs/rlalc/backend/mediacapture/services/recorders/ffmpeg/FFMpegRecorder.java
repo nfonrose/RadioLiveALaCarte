@@ -1,12 +1,15 @@
 package com.prtlabs.rlalc.backend.mediacapture.services.recorders.ffmpeg;
 
-import com.prtlabs.exceptions.PrtBaseRuntimeException;
-import com.prtlabs.exceptions.PrtTechnicalRuntimeException;
+import com.prtlabs.rlalc.backend.mediacapture.utils.RLALCLocalTimeZoneTimeHelper;
+import com.prtlabs.rlalc.domain.ProgramId;
+import com.prtlabs.utils.exceptions.PrtBaseRuntimeException;
+import com.prtlabs.utils.exceptions.PrtTechnicalRuntimeException;
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
 import com.prtlabs.rlalc.backend.mediacapture.services.recorders.IMediaRecorder;
 import com.prtlabs.rlalc.backend.mediacapture.utils.RecordingManifestUtils;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import com.prtlabs.rlalc.exceptions.RLALCExceptionCodesEnum;
+import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,17 +21,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 
 public class FFMpegRecorder implements IMediaRecorder {
 
@@ -37,40 +37,51 @@ public class FFMpegRecorder implements IMediaRecorder {
     private static final String PRTLABS_BASEDIR = System.getProperty("prt.rlalc.baseDir", "/opt/prtlabs");
 
     // Maps to store recording information
-    private static final Map<String, List<UUID>> recordingIdsPerProgramId = new ConcurrentHashMap<>();
-    private static final Map<String, Process> activeProcesses = new ConcurrentHashMap<>();
-    private static final Map<String, String> recordingPaths = new ConcurrentHashMap<>();
-    private static final Map<String, List<String>> processOutputs = new ConcurrentHashMap<>();
+    private static final Map<ProgramId, RecordingId> recordingIdPerProgramId = new ConcurrentHashMap<>();    // There can only be one Recording at a time for a Program (hence the type of recordingIdPerProgramId)
+    private static final Map<RecordingId, ProgramId> programIdPerRecordingId = new ConcurrentHashMap<>();
+    private static final Map<RecordingId, Process> activeProcesses = new ConcurrentHashMap<>();
+    private static final Map<RecordingId, String> recordingPaths = new ConcurrentHashMap<>();
+    private static final Map<RecordingId, List<String>> processOutputs = new ConcurrentHashMap<>();
+
+    @Inject private RLALCLocalTimeZoneTimeHelper rLALCLocalTimeZoneTimeHelper;
+
 
 
     @Override
-    public String startRecording(ProgramDescriptorDTO programDescriptor, Map<String, String> recorderSpecificParameters) {
+    public void initBeforeRecording(ProgramDescriptorDTO programDescriptor, Map<String, String> recorderSpecificParameters) {
+        // Create a RecordingId in the 'rec-<ProgramId>-<epochSec>'
+        RecordingId recordingId = buildRecordingId_UsingProgramId_andCurrentDayForProgram(programDescriptor);
+        recordingIdPerProgramId.put(programDescriptor.getUuid(), recordingId);
+        programIdPerRecordingId.put(recordingId, programDescriptor.getUuid());
+
+        // Create the initial manifest file with PENDING status
+        try {
+            // Compute the filenames and path for the local storage of chunks
+            FileInfoForRecordingStorage fileInfoForRecordingStorage = buildFileInfoForRecordingStorage(programDescriptor);
+            Files.createDirectories(Paths.get(fileInfoForRecordingStorage.outputDir));
+            // Create the initial manifest file with PENDING status
+            RecordingManifestUtils.createOrUpdateManifest(fileInfoForRecordingStorage.outputDir, RecordingStatus.Status.PENDING, null, null);
+        } catch (IOException ioex) {
+            throw new PrtTechnicalRuntimeException(RLALCExceptionCodesEnum.RLAC_006_FailedToStartRecordingForProgram.name(), "Failed to prepare recording for Program=["+programDescriptor.getTitle()+"] with message=["+ioex.getMessage()+"]", ioex);
+        }
+    }
+
+    @Override
+    public void startRecording(ProgramDescriptorDTO programDescriptor, Map<String, String> recorderSpecificParameters) {
         logger.info("Starting recording for program [{}] with UUID [{}]", programDescriptor.getTitle(), programDescriptor.getUuid());
 
         try {
-            // Create a RecordingId
-            String recordingId = UUID.randomUUID().toString();
+            // Create a RecordingId in the 'rec-<ProgramId>-<epochSec>'
+            RecordingId recordingId = buildRecordingId_UsingProgramId_andCurrentDayForProgram(programDescriptor);
 
-            // Create a clean filename from the program descriptor
-            String recordingBaseName = programDescriptor.getUuid().toLowerCase() + "-" +
-                                      programDescriptor.getTitle().toLowerCase()
-                                      .replaceAll("[^a-z0-9]", "_")
-                                      .replaceAll("_+", "_");
+            // Create a clean filename from the program descriptor and create the full output path for ffmpeg
+            FileInfoForRecordingStorage fileInfoForRecordingStorage = buildFileInfoForRecordingStorage(programDescriptor);
+            String outputPathPattern = fileInfoForRecordingStorage.outputDir + "/" + fileInfoForRecordingStorage.recordingBaseName + "_chunk_%Y%m%d_%H%M%S.mp3";
 
-            // Create date prefix for organization
-            LocalDate today = LocalDate.now();
-            String dataPrefix = today.format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
-
-            // Create the output directory
-            String outputDir = PRTLABS_BASEDIR + "/radiolivealacarte/datastore/media/mp3/" + recordingBaseName;
-            Path outputPath = Paths.get(outputDir);
-            Files.createDirectories(outputPath);
-
-            // Create the full output path for ffmpeg
-            String outputPathPattern = outputDir + "/" + recordingBaseName + "_chunk_%Y%m%d_%H%M%S.mp3";
-
-            // Create initial manifest file with PENDING status
-            RecordingManifestUtils.createOrUpdateManifest(outputDir, RecordingStatus.Status.PENDING, null, null);
+            // Check that manifest for this recording already exists (which means that the prepare has already been called)
+            if (!RecordingManifestUtils.checkIfManifestExistAndHasStatus(fileInfoForRecordingStorage.outputDir, RecordingStatus.Status.PENDING)) {
+                throw new PrtTechnicalRuntimeException(RLALCExceptionCodesEnum.RLAC_008_RecordingHasNotBeenInitializedForProgram.name());
+            }
 
             // Build the ffmpeg command
             List<String> command = new ArrayList<>();
@@ -134,14 +145,11 @@ public class FFMpegRecorder implements IMediaRecorder {
 
                         // Update manifest with PARTIAL_FAILURE status and errors
                         RecordingManifestUtils.createOrUpdateManifest(
-                            outputDir, 
+                            fileInfoForRecordingStorage.outputDir,
                             RecordingStatus.Status.PARTIAL_FAILURE, 
                             outputLines, 
                             null
                         );
-
-                        // Return the recording ID anyway so the caller can query the status
-                        return recordingId;
                     }
                 }
             } catch (InterruptedException e) {
@@ -152,33 +160,29 @@ public class FFMpegRecorder implements IMediaRecorder {
             // Store the process and path information
             if (!hasImmediateError) {
                 activeProcesses.put(recordingId, process);
-                recordingPaths.put(recordingId, outputDir);
+                recordingPaths.put(recordingId, fileInfoForRecordingStorage.outputDir);
 
                 // Update manifest to ONGOING status
-                RecordingManifestUtils.updateStatus(outputDir, RecordingStatus.Status.ONGOING);
+                RecordingManifestUtils.updateStatus(fileInfoForRecordingStorage.outputDir, RecordingStatus.Status.ONGOING);
             }
 
             logger.info("Recording started for program [{}] with recording ID [{}]", programDescriptor.getTitle(), recordingId);
-            return recordingId;
 
         } catch (IOException e) {
-            logger.error("Failed to start recording for program [{}]: {}", programDescriptor.getTitle(), e.getMessage(), e);
-            return null;
+            String message = String.format("Failed to start recording for program=[{}] with message=[{}]", programDescriptor.getTitle(), e.getMessage());
+            logger.error(message, e);
+            throw new PrtTechnicalRuntimeException(RLALCExceptionCodesEnum.RLAC_006_FailedToStartRecordingForProgram.name(), message, e);
         }
     }
 
     @Override
-    public void stopRecording(String programId) {
-        if (programId == null) {
-            logger.warn("Cannot stop recording with null recording ID");
-            return;
-        }
+    public void stopRecording(ProgramId programId) {
+        if (programId == null) { logger.warn("Cannot stop recording with null recording ID"); return; }
 
-        logger.info("Stopping recording with ID [{}]", programId != null ? programId : "unknown");
+        logger.info("Stopping recording with ID [{}]", programId);
 
         // Get the path for this recording
         String outputDir = recordingPaths.get(programId);
-
         Process process = activeProcesses.get(programId);
         if (process != null) {
             try {
@@ -362,16 +366,41 @@ public class FFMpegRecorder implements IMediaRecorder {
     }
 
     @Override
-    public List<File> getChunkFiles(String programId, Instant day) {
+    public Map<ProgramId, RecordingStatus> getRecordingStatuses() {
+        Map<ProgramId, RecordingStatus> statuses = new HashMap<>();
+
+        // Iterate through all recording paths and read their manifests
+        for (Map.Entry<RecordingId, String> entry : recordingPaths.entrySet()) {
+            RecordingId recordingId = entry.getKey();
+            String outputDir = entry.getValue();
+
+            try {
+                // Read the manifest file to get the recording status
+                RecordingStatus status = RecordingManifestUtils.readManifest(outputDir);
+                if (status != null) {
+                    statuses.put(programIdPerRecordingId.get(recordingId), status);
+                }
+            } catch (Exception e) {
+                logger.error("Error reading manifest for recording {}: {}", recordingId, e.getMessage(), e);
+                // Create a status with error information
+                RecordingStatus errorStatus = new RecordingStatus(RecordingStatus.Status.PARTIAL_FAILURE);
+                errorStatus.addError("Failed to read manifest: " + e.getMessage());
+                statuses.put(programIdPerRecordingId.get(recordingId), errorStatus);
+            }
+        }
+
+        return statuses;
+    }
+
+    @Override
+    public List<File> getChunkFiles(ProgramId programId, Instant day) {
         // Find the current recordingId matching that programId
-        List<UUID> recordingIdsForProgram = recordingIdsPerProgramId.get(programId);
-        if (recordingIdsForProgram == null)   { throw new PrtBaseRuntimeException(RLALCExceptionCodesEnum.RLAC_002_UnknownProgramID.name()); }
-        if (recordingIdsForProgram.isEmpty()) { throw new PrtBaseRuntimeException(RLALCExceptionCodesEnum.RLAC_003_NoRecordingPlanningForProgram.name(), "No planned RecordingIds found"); }
-        String currentRecordingIdForProgram = recordingIdsForProgram.getLast().toString();
+        RecordingId recordingIdForProgram = recordingIdPerProgramId.get(programId);
+        if (recordingIdForProgram == null) { throw new PrtBaseRuntimeException(RLALCExceptionCodesEnum.RLAC_003_NoRecordingStartedForProgram.name(), "No planned RecordingIds found"); }
 
         // Get the path for this recording
-        String outputDir = recordingPaths.get(currentRecordingIdForProgram);
-        if (outputDir == null) { throw new PrtBaseRuntimeException(RLALCExceptionCodesEnum.RLAC_003_NoRecordingPlanningForProgram.name(), "Recording storage path not created"); }
+        String outputDir = recordingPaths.get(recordingIdForProgram);
+        if (outputDir == null) { throw new PrtBaseRuntimeException(RLALCExceptionCodesEnum.RLAC_003_NoRecordingStartedForProgram.name(), "Recording storage path not created"); }
 
         // Look for the files
         try {
@@ -403,33 +432,6 @@ public class FFMpegRecorder implements IMediaRecorder {
         }
     }
 
-    @Override
-    public List<RecordingStatus> getRecordingStatuses() {
-        List<RecordingStatus> statuses = new ArrayList<>();
-
-        // Iterate through all recording paths and read their manifests
-        for (Map.Entry<String, String> entry : recordingPaths.entrySet()) {
-            String recordingId = entry.getKey();
-            String outputDir = entry.getValue();
-
-            try {
-                // Read the manifest file to get the recording status
-                RecordingStatus status = RecordingManifestUtils.readManifest(outputDir);
-                if (status != null) {
-                    statuses.add(status);
-                }
-            } catch (Exception e) {
-                logger.error("Error reading manifest for recording {}: {}", recordingId, e.getMessage(), e);
-                // Create a status with error information
-                RecordingStatus errorStatus = new RecordingStatus(RecordingStatus.Status.PARTIAL_FAILURE);
-                errorStatus.addError("Failed to read manifest: " + e.getMessage());
-                statuses.add(errorStatus);
-            }
-        }
-
-        return statuses;
-    }
-
 
 
 
@@ -441,13 +443,37 @@ public class FFMpegRecorder implements IMediaRecorder {
     //
     //
 
-    /**
-     * Return a YYYYMMDD string built from the "Instant" day parameter
-     * @param day
-     * @return
-     */
+    private static record RecordingId(String uuid) {}    // RecordingId is an internal concept. Outside of the Recorders, everything is identified by the ProgramIds (not RecordingIds)
+    private static record FileInfoForRecordingStorage(String recordingBaseName, String outputDir) {}
+
+
     private String getDirNameForDay(Instant day) {
         return DateTimeFormatter.ofPattern("yyyyMMdd").format(day.atZone(ZoneOffset.UTC));
+    }
+
+    /**
+     * Build a RecordingId that includes the programID and the currentDay for the program
+     * @param programDescriptor
+     * @return
+     */
+    private RecordingId buildRecordingId_UsingProgramId_andCurrentDayForProgram(ProgramDescriptorDTO programDescriptor) {
+        String currentDayForProgramAsYYYYMMDD = rLALCLocalTimeZoneTimeHelper.getCurrentDayForProgramAsYYYYMMDD(programDescriptor.getTimeZone());
+        return new RecordingId("rec-" + programDescriptor.getUuid() + "-" + currentDayForProgramAsYYYYMMDD);
+    }
+
+    /**
+     * Build a "filename-compatible" name for the directory storing the recording, and the outputDir where chunks will
+     * be stored for this Recording of this Program
+     * @param programDescriptor
+     * @return
+     */
+    private FileInfoForRecordingStorage buildFileInfoForRecordingStorage(ProgramDescriptorDTO programDescriptor) {
+        String recordingBaseName = programDescriptor.getUuid().uuid().toLowerCase() + "-" +
+            programDescriptor.getTitle().toLowerCase()
+                .replaceAll("[^a-z0-9]", "_")
+                .replaceAll("_+", "_");
+        String outputDir = PRTLABS_BASEDIR + "/radiolivealacarte/datastore/media/mp3/" + recordingBaseName;
+        return new FileInfoForRecordingStorage(recordingBaseName, outputDir);
     }
 
 }

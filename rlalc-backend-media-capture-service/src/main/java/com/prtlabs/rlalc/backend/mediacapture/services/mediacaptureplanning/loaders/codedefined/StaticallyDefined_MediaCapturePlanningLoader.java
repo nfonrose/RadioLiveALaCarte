@@ -3,15 +3,17 @@ package com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.loa
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.IMediaCapturePlanningLoader;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.dto.MediaCapturePlanningDTO;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
+import com.prtlabs.rlalc.domain.ProgramId;
 
+import java.time.ZoneId;
 import java.util.*;
 
 public class StaticallyDefined_MediaCapturePlanningLoader implements IMediaCapturePlanningLoader {
 
     private List<ProgramDescriptorDTO> planningContent = new ArrayList<ProgramDescriptorDTO>();
 
-    public StaticallyDefined_MediaCapturePlanningLoader(String title, String streamURL, long startTimeUTCEpochSec, long durationSeconds) {
-        this.planningContent = Arrays.asList(new ProgramDescriptorDTO(null, title, streamURL, startTimeUTCEpochSec, durationSeconds));
+    public StaticallyDefined_MediaCapturePlanningLoader(String title, String streamURL, long startTimeUTCEpochSec, long durationSeconds, ZoneId timeZone) {
+        this.planningContent = Arrays.asList(new ProgramDescriptorDTO(null, title, streamURL, startTimeUTCEpochSec, durationSeconds, timeZone));
     }
 
     public StaticallyDefined_MediaCapturePlanningLoader(List<ProgramDescriptorDTO> planningContent) {
@@ -22,15 +24,7 @@ public class StaticallyDefined_MediaCapturePlanningLoader implements IMediaCaptu
     public MediaCapturePlanningDTO loadMediaCapturePlanning() {
         // Build a MediaCapturePlanning
         return MediaCapturePlanningDTO.builder()
-            .programsToCapture(planningContent.stream().map(programDescriptor -> {    // Iterate on the 'planningContent' list to create the List<StreamToCaptureDTO>
-                    return ProgramDescriptorDTO.builder()
-                        .title(programDescriptor.getTitle())
-                        .uuid(UUID.randomUUID().toString())
-                        .streamURL(programDescriptor.getStreamURL())
-                        .startTimeUTCEpochSec(programDescriptor.getStartTimeUTCEpochSec())
-                        .durationSeconds(programDescriptor.getDurationSeconds())
-                        .build();
-                }).toList())
+            .programsToCapture(planningContent)
             .build();
     }
 }
