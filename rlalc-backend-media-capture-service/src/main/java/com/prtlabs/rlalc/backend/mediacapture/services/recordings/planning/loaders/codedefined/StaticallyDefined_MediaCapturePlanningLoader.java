@@ -1,9 +1,8 @@
-package com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.loaders.codedefined;
+package com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.loaders.codedefined;
 
-import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.IMediaCapturePlanningLoader;
-import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.dto.MediaCapturePlanningDTO;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.IMediaCapturePlanningLoader;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.dto.MediaCapturePlanningDTO;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
-import com.prtlabs.rlalc.domain.ProgramId;
 
 import java.time.ZoneId;
 import java.util.*;

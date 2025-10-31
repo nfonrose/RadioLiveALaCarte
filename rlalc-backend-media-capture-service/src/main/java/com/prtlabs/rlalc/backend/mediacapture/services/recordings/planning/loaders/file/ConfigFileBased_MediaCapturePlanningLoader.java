@@ -1,9 +1,9 @@
-package com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.loaders.file;
+package com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.loaders.file;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.prtlabs.utils.exceptions.PrtTechnicalRuntimeException;
-import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.IMediaCapturePlanningLoader;
-import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.dto.MediaCapturePlanningDTO;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.IMediaCapturePlanningLoader;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.dto.MediaCapturePlanningDTO;
 import com.prtlabs.rlalc.exceptions.RLALCExceptionCodesEnum;
 import com.prtlabs.utils.json.PrtJsonUtils;
 

@@ -1,4 +1,4 @@
-package com.prtlabs.rlalc.backend.mediacapture.services.recorders;
+package com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders;
 
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;

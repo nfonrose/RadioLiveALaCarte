@@ -1,6 +1,6 @@
-package com.prtlabs.rlalc.backend.mediacapture.services.jobs;
+package com.prtlabs.rlalc.backend.mediacapture.services.quartzjobs;
 
-import com.prtlabs.rlalc.backend.mediacapture.services.recorders.IMediaRecorder;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.IMediaRecorder;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import com.prtlabs.utils.json.PrtJsonUtils;
 import jakarta.inject.Inject;

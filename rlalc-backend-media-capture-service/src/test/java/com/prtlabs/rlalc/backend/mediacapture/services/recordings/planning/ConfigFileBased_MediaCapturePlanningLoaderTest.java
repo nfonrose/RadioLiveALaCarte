@@ -1,10 +1,10 @@
-package com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning;
+package com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.prtlabs.rlalc.backend.mediacapture.entrypoint.MediaCaptureServiceGuiceModule;
-import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.dto.MediaCapturePlanningDTO;
-import com.prtlabs.rlalc.backend.mediacapture.services.mediacaptureplanning.loaders.file.ConfigFileBased_MediaCapturePlanningLoader;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.dto.MediaCapturePlanningDTO;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.loaders.file.ConfigFileBased_MediaCapturePlanningLoader;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
