@@ -185,3 +185,18 @@ Can you implement the following methods inside the `RLALCMediaCaptureServiceImpl
 Can you implement the following methods inside the `RLALCMediaCaptureServiceImpl` class?
 
     Map<RecordingId, RecordingStatus> getRecordingChunks(String programId, Instant day);
+
+
+
+
+
+## -------------------------------------------------------------------------------------------------------------------
+
+### ----------------------------
+Create a unit test for the RLALCLocalTimeZoneTimeHelper.getCurrentDayForProgramAsYYYYMMDD method please.
+
+It should test different corner cases knowing that:
+- The code will be executed on a machine that can be in any timezone. But let's first focus on a machine executed in the CEST timezone (Europe/Paris)
+- The caller will provide different `timeZone` parameter values
+
+Be sure to use the IPrtTimeProviderService injected service (using Guice) to simulate various time situations
