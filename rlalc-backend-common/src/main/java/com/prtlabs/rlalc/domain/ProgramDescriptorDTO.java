@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.time.ZoneId;
+import java.util.Map;
 
 /**
  *
@@ -31,19 +32,21 @@ public class ProgramDescriptorDTO {
     @JsonProperty("startTimeUTCEpochSec") private final long startTimeUTCEpochSec;
     @JsonProperty("durationSeconds")      private final long durationSeconds;
     @JsonProperty("timeZone")             private final ZoneId timeZone;
+    @JsonProperty("recorderSpecificParameters") private final Map<String, String> recorderSpecificParameters;
 
     /**
      * This constructor should be created by Lombok but we need to apply the @TeevityDTO solution
      * TODO - Check what the @TeevityDTO solution is actually
      */
     @JsonCreator
-    public ProgramDescriptorDTO(@JsonProperty("uuid") ProgramId uuid, @JsonProperty("title") String title, @JsonProperty("streamURL") String streamURL, @JsonProperty("startTimeUTCEpochSec") long startTimeUTCEpochSec, @JsonProperty("durationSeconds") long durationSeconds, @JsonProperty("timeZone") ZoneId timeZone) {
+    public ProgramDescriptorDTO(@JsonProperty("uuid") ProgramId uuid, @JsonProperty("title") String title, @JsonProperty("streamURL") String streamURL, @JsonProperty("startTimeUTCEpochSec") long startTimeUTCEpochSec, @JsonProperty("durationSeconds") long durationSeconds, @JsonProperty("timeZone") ZoneId timeZone, @JsonProperty("recorderSpecificParameters") Map<String, String> recorderSpecificParameters) {
         this.uuid = uuid;
         this.title = title;
         this.streamURL = streamURL;
         this.startTimeUTCEpochSec = startTimeUTCEpochSec;
         this.durationSeconds = durationSeconds;
         this.timeZone = timeZone;
+        this.recorderSpecificParameters = recorderSpecificParameters;
     }
 
 }
