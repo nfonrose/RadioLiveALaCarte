@@ -8,8 +8,10 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
+import javax.swing.text.html.Option;
 import java.time.ZoneId;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  *
@@ -26,12 +28,12 @@ import java.util.Map;
 @SuperBuilder
 public class ProgramDescriptorDTO {
 
-    @JsonProperty("uuid")                 private final ProgramId uuid;
-    @JsonProperty("title")                private final String title;
-    @JsonProperty("streamURL")            private final String streamURL;
-    @JsonProperty("startTimeUTCEpochSec") private final long startTimeUTCEpochSec;
-    @JsonProperty("durationSeconds")      private final long durationSeconds;
-    @JsonProperty("timeZone")             private final ZoneId timeZone;
+    @JsonProperty("uuid")                       private final ProgramId uuid;
+    @JsonProperty("title")                      private final String title;
+    @JsonProperty("streamURL")                  private final String streamURL;
+    @JsonProperty("startTimeUTCEpochSec")       private final long startTimeUTCEpochSec;
+    @JsonProperty("durationSeconds")            private final long durationSeconds;
+    @JsonProperty("timeZone")                   private final ZoneId timeZone;
     @JsonProperty("recorderSpecificParameters") private final Map<String, String> recorderSpecificParameters;
 
     /**
@@ -47,6 +49,10 @@ public class ProgramDescriptorDTO {
         this.durationSeconds = durationSeconds;
         this.timeZone = timeZone;
         this.recorderSpecificParameters = recorderSpecificParameters;
+    }
+
+    public ProgramDescriptorDTO(@JsonProperty("uuid") ProgramId uuid, @JsonProperty("title") String title, @JsonProperty("streamURL") String streamURL, @JsonProperty("startTimeUTCEpochSec") long startTimeUTCEpochSec, @JsonProperty("durationSeconds") long durationSeconds, @JsonProperty("timeZone") ZoneId timeZone) {
+        this(uuid, title, streamURL, startTimeUTCEpochSec, durationSeconds, timeZone, null);
     }
 
 }
