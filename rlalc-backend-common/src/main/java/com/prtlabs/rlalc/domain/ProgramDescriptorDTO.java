@@ -10,6 +10,7 @@ import lombok.experimental.SuperBuilder;
 
 import javax.swing.text.html.Option;
 import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -25,7 +26,7 @@ import java.util.Optional;
  *
  */
 @Getter
-@SuperBuilder
+@SuperBuilder(toBuilder=true)
 public class ProgramDescriptorDTO {
 
     @JsonProperty("uuid")                       private final ProgramId uuid;
@@ -52,7 +53,7 @@ public class ProgramDescriptorDTO {
     }
 
     public ProgramDescriptorDTO(@JsonProperty("uuid") ProgramId uuid, @JsonProperty("title") String title, @JsonProperty("streamURL") String streamURL, @JsonProperty("startTimeUTCEpochSec") long startTimeUTCEpochSec, @JsonProperty("durationSeconds") long durationSeconds, @JsonProperty("timeZone") ZoneId timeZone) {
-        this(uuid, title, streamURL, startTimeUTCEpochSec, durationSeconds, timeZone, null);
+        this(uuid, title, streamURL, startTimeUTCEpochSec, durationSeconds, timeZone, new HashMap<>());
     }
 
 }

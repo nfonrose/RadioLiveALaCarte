@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
+import com.prtlabs.rlalc.exceptions.RLALCExceptionCodesEnum;
+import com.prtlabs.utils.exceptions.PrtTechnicalRuntimeException;
 import com.prtlabs.utils.json.PrtJsonUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +17,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Utility class for handling recording manifest files.
@@ -236,6 +240,76 @@ public class RecordingManifestUtils {
             logger.error("Failed to read manifest file in {}: {}", outputDir, e.getMessage(), e);
             return false;
         }
+    }
+
+    /**
+     *
+     * @param outputDir
+     * @param capturedOutput
+     * @param finalStatus
+     */
+    public static List<File> gatherChunkFile(String outputDir) {
+        List<File> chunkFiles = new ArrayList<>();
+        try {
+            Path dirPath = Paths.get(outputDir);
+            if (Files.exists(dirPath)) {
+                try (Stream<Path> files = Files.list(dirPath)) {
+                    chunkFiles = files
+                        .filter(Files::isRegularFile)
+                        .filter(p -> p.getFileName().toString().endsWith(".mp3"))
+                        .map(Path::toFile)
+                        .collect(Collectors.toList());
+                }
+            }
+            return chunkFiles;
+        } catch (IOException ex) {
+            throw new PrtTechnicalRuntimeException(RLALCExceptionCodesEnum.RLAC_005_FailedToAccessMediaChunks.name(), "Failed to gather audio chunk files with message=["+ex.getMessage()+"]", ex);
+        }
+    }
+
+
+
+
+
+
+    //
+    //
+    // IMPLEMENTATION
+    //
+    //
+
+    /**
+     *
+     * @param outputDir
+     * @param capturedOutput
+     * @param finalStatus
+     */
+    private static void gatherChunkFileAndUpdateStateAndManifest(String outputDir, List<String> capturedOutput, RecordingStatus.Status finalStatus) {
+        List<File> chunkFiles = gatherChunkFile(outputDir);
+
+        // If we have chunks, mark as completed, otherwise as partial failure
+        if (finalStatus == RecordingStatus.Status.COMPLETED) {
+            finalStatus = chunkFiles.isEmpty() ?
+                RecordingStatus.Status.PARTIAL_FAILURE : RecordingStatus.Status.COMPLETED;
+        }
+
+        if (finalStatus == RecordingStatus.Status.PARTIAL_FAILURE) {
+            // Create a list for errors if we don't have one yet
+            if (capturedOutput == null) {
+                capturedOutput = new ArrayList<>();
+            }
+
+            // Add the error message
+            capturedOutput.add("No active recording process found but recording was requested to stop");
+        }
+
+        // Update the manifest with PARTIAL_FAILURE status and errors
+        RecordingManifestUtils.createOrUpdateManifest(
+            outputDir,
+            finalStatus,
+            capturedOutput,
+            chunkFiles
+        );
     }
 
 }

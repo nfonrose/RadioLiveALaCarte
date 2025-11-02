@@ -41,7 +41,7 @@ public class MediaCaptureJob implements Job {
             // Update its duration if an "adjusted duration" is present (which is the case when the program has already started and the recording needs to be shorter)
             if (dataMap.containsKey(KEY_DURATION_SECONDS)) {
                 long adjustedDurationSeconds = dataMap.getLong(KEY_DURATION_SECONDS);
-                programDescriptor = programDescriptor.builder()    // Adjust the duration in the ProgramDescriptor
+                programDescriptor = programDescriptor.toBuilder()    // Adjust the duration in the ProgramDescriptor
                     .durationSeconds(adjustedDurationSeconds)
                     .build();
             }

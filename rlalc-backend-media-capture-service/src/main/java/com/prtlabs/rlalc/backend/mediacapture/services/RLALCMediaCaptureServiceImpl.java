@@ -194,6 +194,9 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
                     // - Schedule the stop job
                     scheduler.scheduleJob(stopJobDetail, stopTrigger);
 
+                    //
+                    mediaRecorder.initBeforeRecording(program, null);
+
                     logger.info("    -> Media capture scheduled for stream [{}] at [{}] for a duration of [{}]secs", program.getTitle(), startDate, durationSeconds);
                 } catch (JsonProcessingException e) {
                     logger.warn("    -> Failed to schedule recording for stream [{}] with message=[{}]", program.getTitle(), e.getMessage());
