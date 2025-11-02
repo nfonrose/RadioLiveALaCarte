@@ -200,3 +200,23 @@ It should test different corner cases knowing that:
 - The caller will provide different `timeZone` parameter values
 
 Be sure to use the IPrtTimeProviderService injected service (using Guice) to simulate various time situations
+
+
+
+
+
+## -------------------------------------------------------------------------------------------------------------------
+
+### ----------------------------
+
+Create a comprehensive series of integration tests for the IRLALCMediaCaptureService interface (you can create several test classes).
+The test should only use the interface itself and should not use internal components directly.
+
+You must use Mocks that you bind with Guice in order to:
+- Tweak the current time (IPrtTimeProviderService interface)
+- Tweak the recording planning (IMediaCapturePlanningLoader interface and the StaticallyDefined_MediaCapturePlanningLoader implementation)
+- Tweak the behaviour of the IMediaRecorder implementation (only one exists, the FFMpegRecorder) 
+
+One of the tests classes must test the real FFMpegRecorder (without mocking the IMediaRecorder).
+In this case, use the IRLALCMediaCaptureService.getRecordingChunks(...) method to check if files have been created
+For this test, don't go in a crazy never ending loop if the test doesn't pass (because it might not work because of external reasons when using the real FFMpegRecorder)
