@@ -1,6 +1,9 @@
+import net.ltgt.gradle.errorprone.CheckSeverity
+
 plugins {
     id 'java'
     id 'application'
+    id 'net.ltgt.errorprone' version '4.3.0'    // Gradle plugin for the 'Google ErrorProne' tool
 }
 
 group = 'com.prtlabs.rlalc.backend.services.mediacapture'
@@ -12,6 +15,15 @@ java {
         languageVersion = JavaLanguageVersion.of(23)
     }
 }
+
+// Use Google ErrorProne with a light set of rules (focus is on the 'typed Map' + 'record for IDs' usecase
+tasks.withType(JavaCompile).configureEach {
+    options.errorprone {
+        disableAllChecks.set(true)                                 // Disable all checks, then enable only specific ones
+        check("CollectionIncompatibleType", CheckSeverity.ERROR)   // Example: check("EqualsHashCode", CheckSeverity.WARN)
+    }
+}
+
 
 repositories {
     mavenCentral()
@@ -52,6 +64,9 @@ dependencies {
     // Testing
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+
+    // Google ErrorProne dependency
+    errorprone 'com.google.errorprone:error_prone_core:2.43.0'
 }
 
 
