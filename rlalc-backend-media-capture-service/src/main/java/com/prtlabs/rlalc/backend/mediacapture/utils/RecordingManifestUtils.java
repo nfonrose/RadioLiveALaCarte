@@ -135,13 +135,30 @@ public class RecordingManifestUtils {
     }
 
     /**
-     * Updates the status in the manifest file.
+     * Updates the status in the manifest file (without stdour/stderr capture)
      *
-     * @param outputDir the directory where the recording chunks are stored
-     * @param status    the new status
+     * @param programDescriptor
+     * @param ffmpegProcessId
+     * @param ffmpegProcessExitValue
+     * @param outputDirForRecordingChunks
+     * @param ffmpegStdoutStdErrCapture
      * @return true if the status was successfully updated, false otherwise
      */
     public static void updateStatus(ProgramDescriptorDTO programDescriptor, Optional<Long> ffmpegProcessId, Optional<Integer> ffmpegProcessExitValue, String outputDirForRecordingChunks) {
+        updateStatus(programDescriptor, ffmpegProcessId, ffmpegProcessExitValue, outputDirForRecordingChunks, null);
+    }
+
+    /**
+     * Updates the status in the manifest file, with stdour/stderr capture
+     *
+     * @param programDescriptor
+     * @param ffmpegProcessId
+     * @param ffmpegProcessExitValue
+     * @param outputDirForRecordingChunks
+     * @param ffmpegStdoutStdErrCapture
+     * @return true if the status was successfully updated, false otherwise
+     */
+    public static void updateStatus(ProgramDescriptorDTO programDescriptor, Optional<Long> ffmpegProcessId, Optional<Integer> ffmpegProcessExitValue, String outputDirForRecordingChunks, List<String> ffmpegStdoutStdErrCapture) {
         // Compute the RecordingStatus based on the process presence and exitValue
         //  - If we have a process exit value for ffmpeg, the status is either COMPLETED or PARTIAL_FAILURE
         //  - If we don't have an exit code, either the process is not started (the status is PENDING) or it's already started (the status is ONGOING)
@@ -154,9 +171,9 @@ public class RecordingManifestUtils {
 
         // Look for audio chunks
         List<File> audioChunks = gatherChunkFile(outputDirForRecordingChunks);
-        List<String> errors = null;
+        List<String> errors = ((ffmpegStdoutStdErrCapture != null) && (!ffmpegStdoutStdErrCapture.isEmpty())) ? ffmpegStdoutStdErrCapture : null;
 
-        createOrUpdateManifest(outputDirForRecordingChunks, status, null, audioChunks);
+        createOrUpdateManifest(outputDirForRecordingChunks, status, errors, audioChunks);
     }
 
     /**

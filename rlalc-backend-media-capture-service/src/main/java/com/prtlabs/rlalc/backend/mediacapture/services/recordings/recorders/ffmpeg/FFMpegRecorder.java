@@ -108,12 +108,6 @@ public class FFMpegRecorder implements IMediaRecorder {
             logger.info("Started ffmpeg with PID=[{}] and command=[{}]", process.pid(), String.join(" ", command));
             RecordingManifestUtils.updateStatus(programDescriptor, Optional.of(process.pid()), Optional.empty(), fileInfoForRecordingStorage.outputDir);
 
-            // Register a callback for when the process exits
-            process.onExit().thenAccept((theProcess) -> {
-                logger.info(" ============ FFmpeg process=[{}]  exited with code=[{}]. ==================================== ", theProcess.pid(), theProcess.exitValue());
-                RecordingManifestUtils.updateStatus(programDescriptor, Optional.of(process.pid()), Optional.of(theProcess.exitValue()), fileInfoForRecordingStorage.outputDir);
-            });
-
             // Register a thread to collect the process output
             //  - Initialize a buffer
             List<String> outputLines = new ArrayList<>();
@@ -132,6 +126,12 @@ public class FFMpegRecorder implements IMediaRecorder {
             });
             outputThread.setDaemon(true);
             outputThread.start();
+
+            // Register a callback for when the process exits
+            process.onExit().thenAccept((theProcess) -> {
+                logger.info(" ============ FFmpeg process=[{}]  exited with code=[{}]. ==================================== ", theProcess.pid(), theProcess.exitValue());
+                RecordingManifestUtils.updateStatus(programDescriptor, Optional.of(process.pid()), Optional.of(theProcess.exitValue()), fileInfoForRecordingStorage.outputDir, outputLines);
+            });
 
             logger.info("Recording started for program [{}] with recording ID [{}]", programDescriptor.getTitle(), recordingId);
         } catch (IOException e) {
