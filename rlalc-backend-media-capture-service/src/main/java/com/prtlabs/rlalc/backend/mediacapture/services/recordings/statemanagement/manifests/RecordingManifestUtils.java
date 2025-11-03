@@ -1,4 +1,4 @@
-package com.prtlabs.rlalc.backend.mediacapture.utils;
+package com.prtlabs.rlalc.backend.mediacapture.services.recordings.statemanagement.manifests;
 
 import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
-import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.ffmpeg.FFMpegRecorder;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import com.prtlabs.rlalc.exceptions.RLALCExceptionCodesEnum;
 import com.prtlabs.utils.exceptions.PrtTechnicalRuntimeException;

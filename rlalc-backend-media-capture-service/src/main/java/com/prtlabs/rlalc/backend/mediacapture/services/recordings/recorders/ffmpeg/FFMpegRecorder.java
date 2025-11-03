@@ -6,7 +6,7 @@ import com.prtlabs.utils.exceptions.PrtBaseRuntimeException;
 import com.prtlabs.utils.exceptions.PrtTechnicalRuntimeException;
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
 import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.IMediaRecorder;
-import com.prtlabs.rlalc.backend.mediacapture.utils.RecordingManifestUtils;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.statemanagement.manifests.RecordingManifestUtils;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import com.prtlabs.rlalc.exceptions.RLALCExceptionCodesEnum;
 import jakarta.inject.Inject;

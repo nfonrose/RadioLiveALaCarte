@@ -7,6 +7,8 @@ import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.IMedi
 import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.loaders.file.ConfigFileBased_MediaCapturePlanningLoader;
 import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.IMediaRecorder;
 import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.ffmpeg.FFMpegRecorder;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.statemanagement.IRecordingStateManagementService;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.statemanagement.manifests.ManifestFileBasedRecordingStateManagementService;
 import com.prtlabs.utils.dependencyinjection.guice.quartz.PrtGuiceQuartzJobFactory;
 import com.prtlabs.utils.time.provider.IPrtTimeProviderService;
 import com.prtlabs.utils.time.provider.PrtComputerClockBasedTimeProviderService;
@@ -26,6 +28,7 @@ public class MediaCaptureServiceGuiceModule extends AbstractModule {
         //  - PRTLabs framework
         bind(IPrtTimeProviderService.class).to(PrtComputerClockBasedTimeProviderService.class);
         //  - RLALC services
+        bind(IRecordingStateManagementService.class).to(ManifestFileBasedRecordingStateManagementService.class);
         bind(IRLALCMediaCaptureService.class).to(RLALCMediaCaptureServiceImpl.class);
         bind(IMediaCapturePlanningLoader.class).to(ConfigFileBased_MediaCapturePlanningLoader.class);
         bind(IMediaRecorder.class).to(FFMpegRecorder.class);
