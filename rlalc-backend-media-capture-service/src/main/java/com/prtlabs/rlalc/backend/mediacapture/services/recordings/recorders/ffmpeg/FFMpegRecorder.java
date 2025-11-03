@@ -165,7 +165,7 @@ public class FFMpegRecorder implements IMediaRecorder {
                 logger.warn("Active ffmpeg recording process found (which is expected since it's supposed to auto exit after the defined duration");
             }
         } else {
-            logger.warn("No active FFMPEG recording process found (which is expected since it's supposed to auto exit after the defined duration");
+            logger.info("No active FFMPEG recording process found (which is expected since it's supposed to auto exit after the defined duration");
         }
 
         // Clean up
