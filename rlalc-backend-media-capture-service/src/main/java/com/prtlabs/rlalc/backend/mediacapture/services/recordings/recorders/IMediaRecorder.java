@@ -12,7 +12,7 @@ import java.util.Map;
 
 public interface IMediaRecorder {
 
-    void initBeforeRecording(ProgramDescriptorDTO programDescriptor, Map<String, String> recorderSpecificParameters);
+    void initBeforeRecording(ProgramDescriptorDTO programDescriptor);
     void startRecording(ProgramDescriptorDTO programDescriptor, Map<String, String> recorderSpecificParameters);
     void stopRecording(ProgramId programId);
 

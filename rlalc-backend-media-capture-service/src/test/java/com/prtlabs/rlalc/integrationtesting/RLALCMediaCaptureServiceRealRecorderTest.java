@@ -1,5 +1,10 @@
 package com.prtlabs.rlalc.integrationtesting;
 
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
@@ -9,6 +14,7 @@ import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.IMedi
 import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.IMediaRecorder;
 import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.ffmpeg.FFMpegRecorder;
 import com.prtlabs.rlalc.domain.ProgramId;
+import com.prtlabs.utils.json.PrtJsonUtils;
 import com.prtlabs.utils.time.provider.IPrtTimeProviderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,7 +22,10 @@ import org.junit.jupiter.api.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;

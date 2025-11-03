@@ -1,9 +1,13 @@
 package com.prtlabs.rlalc.backend.mediacapture.utils;
 
+import com.fasterxml.jackson.core.util.DefaultIndenter;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.ffmpeg.FFMpegRecorder;
+import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import com.prtlabs.rlalc.exceptions.RLALCExceptionCodesEnum;
 import com.prtlabs.utils.exceptions.PrtTechnicalRuntimeException;
 import com.prtlabs.utils.json.PrtJsonUtils;
@@ -17,6 +21,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -63,7 +68,9 @@ public class RecordingManifestUtils {
             }
 
             // Write to file with pretty printing
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(manifestPath.toFile(), rootNode);
+            objectMapper.writer(new DefaultPrettyPrinter().withArrayIndenter(DefaultIndenter.SYSTEM_LINEFEED_INSTANCE))
+                .writeValue(manifestPath.toFile(), rootNode);
+
 
             return true;
         } catch (IOException e) {
@@ -134,112 +141,22 @@ public class RecordingManifestUtils {
      * @param status    the new status
      * @return true if the status was successfully updated, false otherwise
      */
-    public static boolean updateStatus(String outputDir, RecordingStatus.Status status) {
-        try {
-            Path manifestPath = Paths.get(outputDir, MANIFEST_FILENAME);
-
-            // If the manifest doesn't exist, create it
-            if (!Files.exists(manifestPath)) {
-                return createOrUpdateManifest(outputDir, status, null, null);
-            }
-
-            // Read the existing manifest
-            ObjectNode rootNode = (ObjectNode) objectMapper.readTree(manifestPath.toFile());
-
-            // Update the status
-            rootNode.put("status", status.toString().toLowerCase());
-
-            // Write back to file
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(manifestPath.toFile(), rootNode);
-
-            return true;
-        } catch (IOException e) {
-            logger.error("Failed to update status in manifest file in {}: {}", outputDir, e.getMessage(), e);
-            return false;
+    public static void updateStatus(ProgramDescriptorDTO programDescriptor, Optional<Long> ffmpegProcessId, Optional<Integer> ffmpegProcessExitValue, String outputDirForRecordingChunks) {
+        // Compute the RecordingStatus based on the process presence and exitValue
+        //  - If we have a process exit value for ffmpeg, the status is either COMPLETED or PARTIAL_FAILURE
+        //  - If we don't have an exit code, either the process is not started (the status is PENDING) or it's already started (the status is ONGOING)
+        RecordingStatus.Status status = null;
+        if (ffmpegProcessExitValue.isPresent()) {
+            status = (ffmpegProcessExitValue.get()==0) ? RecordingStatus.Status.COMPLETED : RecordingStatus.Status.PARTIAL_FAILURE;
+        } else {
+            status = (ffmpegProcessId.isPresent()) ? RecordingStatus.Status.ONGOING : RecordingStatus.Status.PENDING;
         }
-    }
 
-    /**
-     * Adds an error to the manifest file.
-     *
-     * @param outputDir the directory where the recording chunks are stored
-     * @param error     the error to add
-     * @return true if the error was successfully added, false otherwise
-     */
-    public static boolean addError(String outputDir, String error) {
-        try {
-            Path manifestPath = Paths.get(outputDir, MANIFEST_FILENAME);
+        // Look for audio chunks
+        List<File> audioChunks = gatherChunkFile(outputDirForRecordingChunks);
+        List<String> errors = null;
 
-            // If the manifest doesn't exist, create it with the error
-            if (!Files.exists(manifestPath)) {
-                List<String> errors = new ArrayList<>();
-                errors.add(error);
-                return createOrUpdateManifest(outputDir, RecordingStatus.Status.PARTIAL_FAILURE, errors, null);
-            }
-
-            // Read the existing manifest
-            ObjectNode rootNode = (ObjectNode) objectMapper.readTree(manifestPath.toFile());
-
-            // Add the error
-            ArrayNode errorsNode;
-            if (rootNode.has("errors")) {
-                errorsNode = (ArrayNode) rootNode.get("errors");
-            } else {
-                errorsNode = rootNode.putArray("errors");
-            }
-            errorsNode.add(error);
-
-            // Update the status to PARTIAL_FAILURE if it's not already
-            rootNode.put("status", RecordingStatus.Status.PARTIAL_FAILURE.toString().toLowerCase());
-
-            // Write back to file
-            objectMapper.writerWithDefaultPrettyPrinter().writeValue(manifestPath.toFile(), rootNode);
-
-            return true;
-        } catch (IOException e) {
-            logger.error("Failed to add error to manifest file in {}: {}", outputDir, e.getMessage(), e);
-            return false;
-        }
-    }
-
-    /**
-     * Checks if a manifest file exists in the specified directory and has the expected status.
-     *
-     * @param outputDir      the directory where the recording chunks are stored
-     * @param expectedStatus the status to check for
-     * @return true if the manifest exists and has the expected status, false otherwise
-     */
-    public static boolean checkIfManifestExistAndHasStatus(String outputDir, RecordingStatus.Status expectedStatus) {
-        try {
-            Path manifestPath = Paths.get(outputDir, MANIFEST_FILENAME);
-
-            // Check if the manifest exists
-            if (!Files.exists(manifestPath)) {
-                logger.debug("Manifest file does not exist in {}", outputDir);
-                return false;
-            }
-
-            // Read the manifest file
-            ObjectNode rootNode = (ObjectNode) objectMapper.readTree(manifestPath.toFile());
-
-            // Check if the status matches the expected status
-            if (rootNode.has("status")) {
-                String statusStr = rootNode.get("status").asText().toUpperCase();
-                try {
-                    RecordingStatus.Status actualStatus = RecordingStatus.Status.valueOf(statusStr);
-                    return actualStatus == expectedStatus;
-                } catch (IllegalArgumentException e) {
-                    logger.warn("Invalid status in manifest: {}", statusStr);
-                    return false;
-                }
-            } else {
-                logger.debug("Manifest file in {} does not have a status field", outputDir);
-                return false;
-            }
-        } catch (IOException e) {
-            logger.error("Failed to read manifest file in {}: {}", outputDir, e.getMessage(), e);
-            return false;
-        }
+        createOrUpdateManifest(outputDirForRecordingChunks, status, null, audioChunks);
     }
 
     /**
@@ -265,51 +182,6 @@ public class RecordingManifestUtils {
         } catch (IOException ex) {
             throw new PrtTechnicalRuntimeException(RLALCExceptionCodesEnum.RLAC_005_FailedToAccessMediaChunks.name(), "Failed to gather audio chunk files with message=["+ex.getMessage()+"]", ex);
         }
-    }
-
-
-
-
-
-
-    //
-    //
-    // IMPLEMENTATION
-    //
-    //
-
-    /**
-     *
-     * @param outputDir
-     * @param capturedOutput
-     * @param finalStatus
-     */
-    private static void gatherChunkFileAndUpdateStateAndManifest(String outputDir, List<String> capturedOutput, RecordingStatus.Status finalStatus) {
-        List<File> chunkFiles = gatherChunkFile(outputDir);
-
-        // If we have chunks, mark as completed, otherwise as partial failure
-        if (finalStatus == RecordingStatus.Status.COMPLETED) {
-            finalStatus = chunkFiles.isEmpty() ?
-                RecordingStatus.Status.PARTIAL_FAILURE : RecordingStatus.Status.COMPLETED;
-        }
-
-        if (finalStatus == RecordingStatus.Status.PARTIAL_FAILURE) {
-            // Create a list for errors if we don't have one yet
-            if (capturedOutput == null) {
-                capturedOutput = new ArrayList<>();
-            }
-
-            // Add the error message
-            capturedOutput.add("No active recording process found but recording was requested to stop");
-        }
-
-        // Update the manifest with PARTIAL_FAILURE status and errors
-        RecordingManifestUtils.createOrUpdateManifest(
-            outputDir,
-            finalStatus,
-            capturedOutput,
-            chunkFiles
-        );
     }
 
 }

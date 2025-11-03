@@ -202,7 +202,7 @@ public class RLALCMediaCaptureServiceMockTest extends BaseRLALCMediaCaptureServi
         private final Map<ProgramId, List<File>> chunkFiles = new ConcurrentHashMap<>();
         
         @Override
-        public void initBeforeRecording(ProgramDescriptorDTO programDescriptor, Map<String, String> recorderSpecificParameters) {
+        public void initBeforeRecording(ProgramDescriptorDTO programDescriptor) {
             initializedPrograms.add(programDescriptor.getUuid());
             recordingStatuses.put(programDescriptor.getUuid(), new RecordingStatus(RecordingStatus.Status.PENDING));
         }

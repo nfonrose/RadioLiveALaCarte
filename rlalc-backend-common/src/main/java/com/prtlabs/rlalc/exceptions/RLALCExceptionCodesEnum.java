@@ -10,8 +10,7 @@ public enum RLALCExceptionCodesEnum {
     RLAC_005_FailedToAccessMediaChunks,
     RLAC_006_FailedToStartRecordingForProgram,
     RLAC_007_FailedToPrepareForRecordingOfProgram,
-    RLAC_008_RecordingHasNotBeenInitializedForProgram,
-    RLAC_009_FailedToStopRecordingProcessForUnkownReason,
+    RLAC_008_FailedToStopRecordingProcessForUnkownReason,
     ;
 
 }

@@ -25,9 +25,6 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 
 public class FFMpegRecorder implements IMediaRecorder {
@@ -48,7 +45,7 @@ public class FFMpegRecorder implements IMediaRecorder {
 
 
     @Override
-    public void initBeforeRecording(ProgramDescriptorDTO programDescriptor, Map<String, String> recorderSpecificParameters) {
+    public void initBeforeRecording(ProgramDescriptorDTO programDescriptor) {
         // Create a RecordingId in the 'rec-<ProgramId>-<epochSec>'
         RecordingId recordingId = buildRecordingId_UsingProgramId_andCurrentDayForProgram(programDescriptor);
         recordingIdPerProgramId.put(programDescriptor.getUuid(), recordingId);
@@ -79,18 +76,13 @@ public class FFMpegRecorder implements IMediaRecorder {
             // Create a clean filename from the program descriptor and create the full output path for ffmpeg
             FileInfoForRecordingStorage fileInfoForRecordingStorage = buildFileInfoForRecordingStorage(programDescriptor);
 
-            // Check that manifest for this recording already exists (which means that the prepare has already been called)
-            if (!RecordingManifestUtils.checkIfManifestExistAndHasStatus(fileInfoForRecordingStorage.outputDir, RecordingStatus.Status.PENDING)) {
-                throw new PrtTechnicalRuntimeException(RLALCExceptionCodesEnum.RLAC_008_RecordingHasNotBeenInitializedForProgram.name());
-            }
-
             // Start the ffmpeg process
             //  - Build the output files pattern
             String audioChunksPathPattern = fileInfoForRecordingStorage.outputDir + "/" + fileInfoForRecordingStorage.recordingBaseName + "_chunk_%Y%m%d_%H%M%S.mp3";
             //  - Build the ffmpeg command
             String ffmpegCommand = String.join(" ", List.of(
                 "ffmpeg",
-                "-t", programDescriptor.getDurationSeconds(),
+                "-t", ""+programDescriptor.getDurationSeconds(),
                 "-i", "\"" + programDescriptor.getStreamURL() + "\"",
                 "-c:a", "libmp3lame",
                 "-b:a", "160k",
@@ -114,12 +106,12 @@ public class FFMpegRecorder implements IMediaRecorder {
 
             // Update manifest to ONGOING status
             logger.info("Started ffmpeg with PID=[{}] and command=[{}]", process.pid(), String.join(" ", command));
-            RecordingManifestUtils.updateStatus(fileInfoForRecordingStorage.outputDir, RecordingStatus.Status.ONGOING);
+            RecordingManifestUtils.updateStatus(programDescriptor, Optional.of(process.pid()), Optional.empty(), fileInfoForRecordingStorage.outputDir);
 
             // Register a callback for when the process exits
             process.onExit().thenAccept((theProcess) -> {
                 logger.info(" ============ FFmpeg process=[{}]  exited with code=[{}]. ==================================== ", theProcess.pid(), theProcess.exitValue());
-                RecordingManifestUtils.updateStatus(programDescriptor, recordingId, theProcess.pid(), theProcess.exitValue(), fileInfoForRecordingStorage);
+                RecordingManifestUtils.updateStatus(programDescriptor, Optional.of(process.pid()), Optional.of(theProcess.exitValue()), fileInfoForRecordingStorage.outputDir);
             });
 
             // Register a thread to collect the process output
@@ -163,7 +155,7 @@ public class FFMpegRecorder implements IMediaRecorder {
             // Send SIGTERM to allow ffmpeg to clean up resources and wait for the process to terminate
             process.destroy();
             boolean terminated = false;
-            try { process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS); } catch (InterruptedException e) { throw new PrtTechnicalRuntimeException(RLALCExceptionCodesEnum.RLAC_009_FailedToStopRecordingProcessForUnkownReason.name(), e.getMessage(), e); }
+            try { process.waitFor(5, java.util.concurrent.TimeUnit.SECONDS); } catch (InterruptedException e) { throw new PrtTechnicalRuntimeException(RLALCExceptionCodesEnum.RLAC_008_FailedToStopRecordingProcessForUnkownReason.name(), e.getMessage(), e); }
             if (!terminated) {
                 // If it didn't terminate gracefully, force it
                 logger.warn(" -> FFMPEG process did not terminate gracefully, forcing termination");

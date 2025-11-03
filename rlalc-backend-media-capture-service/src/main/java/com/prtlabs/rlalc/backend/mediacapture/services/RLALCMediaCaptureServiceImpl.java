@@ -2,6 +2,7 @@ package com.prtlabs.rlalc.backend.mediacapture.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.prtlabs.rlalc.backend.mediacapture.services.quartzjobs.MediaCapturePendingStateInitializationJob;
 import com.prtlabs.rlalc.domain.ProgramId;
 import com.prtlabs.utils.dependencyinjection.guice.quartz.PrtGuiceQuartzJobFactory;
 import com.prtlabs.utils.exceptions.PrtTechnicalException;
@@ -26,10 +27,9 @@ import jakarta.inject.Singleton;
 import java.io.File;
 import java.net.URI;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.quartz.impl.matchers.GroupMatcher;
@@ -151,6 +151,40 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
                         continue;
                     }
 
+                    // Create the Quartz "pending initialization" Job and its associate trigger
+                    // - Compute the time at which the pending state should be set
+                    ZoneId timeZone = program.getTimeZone();
+                    ZonedDateTime programMidnight = startDate.toInstant().atZone(timeZone)
+                        .toLocalDate() // midnight on the same local day as the program start
+                        .atStartOfDay(timeZone);
+                    // - Ensure we don’t schedule in the past
+                    Date pendingJobDate = Date.from(programMidnight.toInstant());
+                    if (pendingJobDate.before(now)) {
+                        // Move to next day’s midnight if already passed
+                        programMidnight = programMidnight.plusDays(1);
+                        pendingJobDate = Date.from(programMidnight.toInstant());
+                    }
+                    // - Create the Job
+                    String pendingJobId = "pending-" + program.getUuid();
+                    String pendingTriggerId = "pending-trigger-" + program.getUuid();
+                    JobDataMap pendingJobData = new JobDataMap();
+                    pendingJobData.put(MediaCaptureJob.KEY_PROGRAM_DESC_ASJSON, mapper.writeValueAsString(program));
+                    JobDetail pendingJobDetail = JobBuilder.newJob(MediaCapturePendingStateInitializationJob.class)
+                        .withIdentity(pendingJobId)
+                        .usingJobData(pendingJobData)
+                        .build();
+                    // - Trigger at 00:00am local program time
+                    Trigger pendingTrigger = TriggerBuilder.newTrigger()
+                        .withIdentity(pendingTriggerId)
+                        .startAt(pendingJobDate)
+                        .withSchedule(CronScheduleBuilder.dailyAtHourAndMinute(0, 0)
+                            .inTimeZone(TimeZone.getTimeZone(timeZone)))
+                        .build();
+                    // - Schedule the pending initialization job
+                    scheduler.scheduleJob(pendingJobDetail, pendingTrigger);
+                    logger.info("    -> Pending job scheduled at [{}] in timeZone [{}]", pendingJobDate, timeZone);
+
+
                     // Create the Quartz Start Job and its associate trigger
                     // - Create the Job
                     String startRecordingJobId = "capture-" + program.getUuid();
@@ -194,8 +228,8 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
                     // - Schedule the stop job
                     scheduler.scheduleJob(stopJobDetail, stopTrigger);
 
-                    //
-                    mediaRecorder.initBeforeRecording(program, null);
+                    // Initialize the recording into a Pending state for the first day (the "pending state initializations" for the days after today are performed by the dedicated Quartz Job)
+                    mediaRecorder.initBeforeRecording(program);
 
                     logger.info("    -> Media capture scheduled for stream [{}] at [{}] for a duration of [{}]secs", program.getTitle(), startDate, durationSeconds);
                 } catch (JsonProcessingException e) {
