@@ -23,7 +23,7 @@ public interface IRLALCMediaCaptureService {
     // Get the current status of the system and give access to the media chunks
     //
     List<ProgramId>                 getScheduledProgramIds();
-    Map<ProgramId, RecordingStatus> getRecordingStatuses();
+    Map<ProgramId, RecordingStatus> getRecordingStatusesForCurrentDay();
     List<URI>                       getRecordingChunks(ProgramId programId, Instant day);
 
 }

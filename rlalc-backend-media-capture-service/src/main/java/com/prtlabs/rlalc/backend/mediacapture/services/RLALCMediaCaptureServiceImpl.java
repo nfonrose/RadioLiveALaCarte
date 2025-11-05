@@ -90,7 +90,7 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
     }
 
     @Override
-    public Map<ProgramId, RecordingStatus> getRecordingStatuses() {
+    public Map<ProgramId, RecordingStatus> getRecordingStatusesForCurrentDay() {
         return mediaRecorder.getRecordingStatuses();
     }
 

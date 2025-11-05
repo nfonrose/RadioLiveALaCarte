@@ -5,11 +5,14 @@ import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import com.prtlabs.rlalc.exceptions.RLALCExceptionCodesEnum;
 import com.prtlabs.utils.exceptions.PrtTechnicalRuntimeException;
 import com.prtlabs.utils.json.PrtJsonUtils;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.statemanagement.IRecordingStateManagementService;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,12 +27,14 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+
 /**
  * Utility class for handling recording manifest files.
  */
-public class RecordingManifestUtils {
+public class ManifestFileBasedRecordingStateManagementService implements IRecordingStateManagementService {
 
-    private static final Logger logger = LoggerFactory.getLogger(RecordingManifestUtils.class);
+
+    private static final Logger logger = LoggerFactory.getLogger(ManifestFileBasedRecordingStateManagementService.class);
     private static final String MANIFEST_FILENAME = "recording-manifest.json";
     private static final ObjectMapper objectMapper = PrtJsonUtils.getFasterXmlObjectMapper();
 
@@ -42,7 +47,7 @@ public class RecordingManifestUtils {
      * @param chunkList the list of chunk files
      * @return true if the manifest was successfully created/updated, false otherwise
      */
-    public static boolean createOrUpdateManifest(String outputDir, RecordingStatus.Status status, List<String> errors, List<File> chunkList) {
+    public boolean createOrUpdateManifest(String outputDir, RecordingStatus.Status status, List<String> errors, List<File> chunkList) {
         try {
             Path manifestPath = Paths.get(outputDir, MANIFEST_FILENAME);
 
@@ -84,7 +89,8 @@ public class RecordingManifestUtils {
      * @param outputDir the directory where the recording chunks are stored
      * @return a RecordingStatus object, or null if the manifest couldn't be read
      */
-    public static RecordingStatus readManifest(String outputDir) {
+    @Override
+    public RecordingStatus readRecordingState(String outputDir) {
         try {
             Path manifestPath = Paths.get(outputDir, MANIFEST_FILENAME);
 
@@ -143,7 +149,7 @@ public class RecordingManifestUtils {
      * @param ffmpegStdoutStdErrCapture
      * @return true if the status was successfully updated, false otherwise
      */
-    public static void updateStatus(ProgramDescriptorDTO programDescriptor, Optional<Long> ffmpegProcessId, Optional<Integer> ffmpegProcessExitValue, String outputDirForRecordingChunks) {
+    public void updateStatus(ProgramDescriptorDTO programDescriptor, Optional<Long> ffmpegProcessId, Optional<Integer> ffmpegProcessExitValue, String outputDirForRecordingChunks) {
         updateStatus(programDescriptor, ffmpegProcessId, ffmpegProcessExitValue, outputDirForRecordingChunks, null);
     }
 
@@ -157,7 +163,7 @@ public class RecordingManifestUtils {
      * @param ffmpegStdoutStdErrCapture
      * @return true if the status was successfully updated, false otherwise
      */
-    public static void updateStatus(ProgramDescriptorDTO programDescriptor, Optional<Long> ffmpegProcessId, Optional<Integer> ffmpegProcessExitValue, String outputDirForRecordingChunks, List<String> ffmpegStdoutStdErrCapture) {
+    public void updateStatus(ProgramDescriptorDTO programDescriptor, Optional<Long> ffmpegProcessId, Optional<Integer> ffmpegProcessExitValue, String outputDirForRecordingChunks, List<String> ffmpegStdoutStdErrCapture) {
         // Compute the RecordingStatus based on the process presence and exitValue
         //  - If we have a process exit value for ffmpeg, the status is either COMPLETED or PARTIAL_FAILURE
         //  - If we don't have an exit code, either the process is not started (the status is PENDING) or it's already started (the status is ONGOING)
@@ -175,13 +181,24 @@ public class RecordingManifestUtils {
         createOrUpdateManifest(outputDirForRecordingChunks, status, errors, audioChunks);
     }
 
+
+
+
+
+
+    //
+    //
+    // IMPLEMENTATION
+    //
+    //
+
     /**
      *
      * @param outputDir
      * @param capturedOutput
      * @param finalStatus
      */
-    public static List<File> gatherChunkFile(String outputDir) {
+    private List<File> gatherChunkFile(String outputDir) {
         List<File> chunkFiles = new ArrayList<>();
         try {
             Path dirPath = Paths.get(outputDir);

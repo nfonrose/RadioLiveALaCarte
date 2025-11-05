@@ -1,12 +1,13 @@
 package com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.ffmpeg;
 
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.statemanagement.IRecordingStateManagementService;
 import com.prtlabs.rlalc.backend.mediacapture.utils.RLALCLocalTimeZoneTimeHelper;
 import com.prtlabs.rlalc.domain.ProgramId;
 import com.prtlabs.utils.exceptions.PrtBaseRuntimeException;
 import com.prtlabs.utils.exceptions.PrtTechnicalRuntimeException;
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
 import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.IMediaRecorder;
-import com.prtlabs.rlalc.backend.mediacapture.services.recordings.statemanagement.manifests.RecordingManifestUtils;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.statemanagement.manifests.ManifestFileBasedRecordingStateManagementService;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import com.prtlabs.rlalc.exceptions.RLALCExceptionCodesEnum;
 import jakarta.inject.Inject;
@@ -25,6 +26,8 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 public class FFMpegRecorder implements IMediaRecorder {
@@ -41,6 +44,7 @@ public class FFMpegRecorder implements IMediaRecorder {
     private static final Map<RecordingId, List<String>> processOutputs = new ConcurrentHashMap<>();
 
     @Inject private RLALCLocalTimeZoneTimeHelper rLALCLocalTimeZoneTimeHelper;
+    @Inject private IRecordingStateManagementService recordingStateManagementService;
 
 
 
@@ -59,7 +63,7 @@ public class FFMpegRecorder implements IMediaRecorder {
             // Initialize the recording path since it's needed to access the Manifest (to check the status of a Recording)
             recordingPaths.put(recordingId, fileInfoForRecordingStorage.outputDir);
             // Create the initial manifest file with PENDING status
-            RecordingManifestUtils.createOrUpdateManifest(fileInfoForRecordingStorage.outputDir, RecordingStatus.Status.PENDING, null, null);
+            recordingStateManagementService.createOrUpdateManifest(fileInfoForRecordingStorage.outputDir, RecordingStatus.Status.PENDING, null, null);
         } catch (IOException ioex) {
             throw new PrtTechnicalRuntimeException(RLALCExceptionCodesEnum.RLAC_006_FailedToStartRecordingForProgram.name(), "Failed to prepare recording for Program=["+programDescriptor.getTitle()+"] with message=["+ioex.getMessage()+"]", ioex);
         }
@@ -106,7 +110,7 @@ public class FFMpegRecorder implements IMediaRecorder {
 
             // Update manifest to ONGOING status
             logger.info("Started ffmpeg with PID=[{}] and command=[{}]", process.pid(), String.join(" ", command));
-            RecordingManifestUtils.updateStatus(programDescriptor, Optional.of(process.pid()), Optional.empty(), fileInfoForRecordingStorage.outputDir);
+            recordingStateManagementService.updateStatus(programDescriptor, Optional.of(process.pid()), Optional.empty(), fileInfoForRecordingStorage.outputDir);
 
             // Register a thread to collect the process output
             //  - Initialize a buffer
@@ -130,7 +134,7 @@ public class FFMpegRecorder implements IMediaRecorder {
             // Register a callback for when the process exits
             process.onExit().thenAccept((theProcess) -> {
                 logger.info(" ============ FFmpeg process=[{}]  exited with code=[{}]. ==================================== ", theProcess.pid(), theProcess.exitValue());
-                RecordingManifestUtils.updateStatus(programDescriptor, Optional.of(process.pid()), Optional.of(theProcess.exitValue()), fileInfoForRecordingStorage.outputDir, outputLines);
+                recordingStateManagementService.updateStatus(programDescriptor, Optional.of(process.pid()), Optional.of(theProcess.exitValue()), fileInfoForRecordingStorage.outputDir, outputLines);
             });
 
             logger.info("Recording started for program [{}] with recording ID [{}]", programDescriptor.getTitle(), recordingId);
@@ -186,7 +190,7 @@ public class FFMpegRecorder implements IMediaRecorder {
 
             try {
                 // Read the manifest file to get the recording status
-                RecordingStatus status = RecordingManifestUtils.readManifest(outputDir);
+                RecordingStatus status = recordingStateManagementService.readRecordingState(outputDir);
                 if (status != null) {
                     statuses.put(programIdPerRecordingId.get(recordingId), status);
                 }
@@ -222,8 +226,19 @@ public class FFMpegRecorder implements IMediaRecorder {
         if (!Files.exists(dirForDayPath)) { return new ArrayList<>(); /* throw new PrtBaseRuntimeException(RLALCExceptionCodesEnum.RLAC_004_NoRecordingsStorageFoundForProgram.name(), "Recording storage path for that day=["+dirForDayPath.toFile().getAbsolutePath()+"] not found");*/ }
 
         // Get all MP3 files in the directory
-        List<File> matchingFiles = RecordingManifestUtils.gatherChunkFile(dirForDayPath.toFile().getAbsolutePath());
-        return matchingFiles;
+        List<File> chunkFiles = new ArrayList<>();
+        try {
+            try (Stream<Path> files = Files.list(dirForDayPath)) {
+                chunkFiles = files
+                    .filter(Files::isRegularFile)
+                    .filter(p -> p.getFileName().toString().endsWith(".mp3"))
+                    .map(Path::toFile)
+                    .collect(Collectors.toList());
+            }
+            return chunkFiles;
+        } catch (IOException ex) {
+            throw new PrtTechnicalRuntimeException(RLALCExceptionCodesEnum.RLAC_005_FailedToAccessMediaChunks.name(), "Failed to gather audio chunk files with message=["+ex.getMessage()+"]", ex);
+        }
     }
 
 
