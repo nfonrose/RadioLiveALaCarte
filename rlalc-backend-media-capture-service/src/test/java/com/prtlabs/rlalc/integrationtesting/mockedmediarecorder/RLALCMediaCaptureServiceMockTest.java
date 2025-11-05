@@ -1,4 +1,4 @@
-package com.prtlabs.rlalc.integrationtesting;
+package com.prtlabs.rlalc.integrationtesting.mockedmediarecorder;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
@@ -7,8 +7,10 @@ import com.prtlabs.rlalc.backend.mediacapture.services.IRLALCMediaCaptureService
 import com.prtlabs.rlalc.backend.mediacapture.services.RLALCMediaCaptureServiceImpl;
 import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.IMediaCapturePlanningLoader;
 import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.IMediaRecorder;
-import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import com.prtlabs.rlalc.domain.ProgramId;
+import com.prtlabs.rlalc.integrationtesting.BaseRLALCMediaCaptureServiceTest;
+import com.prtlabs.rlalc.integrationtesting.MockMediaCapturePlanningLoader;
+import com.prtlabs.rlalc.integrationtesting.MockTimeProviderService;
 import com.prtlabs.utils.time.provider.IPrtTimeProviderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,7 +20,6 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -154,7 +155,7 @@ public class RLALCMediaCaptureServiceMockTest extends BaseRLALCMediaCaptureServi
         mockMediaRecorder.setRecordingStatus(programId, status);
         
         // Get recording statuses
-        Map<ProgramId, RecordingStatus> statuses = mediaCaptureService.getRecordingStatuses();
+        Map<ProgramId, RecordingStatus> statuses = mediaCaptureService.getRecordingStatusesForCurrentDay();
         
         // Verify the status
         assertEquals(1, statuses.size());
@@ -191,57 +192,5 @@ public class RLALCMediaCaptureServiceMockTest extends BaseRLALCMediaCaptureServi
         assertEquals(new File("/tmp/chunk1.mp3").getPath(), chunks.get(0).getPath());
         assertEquals(new File("/tmp/chunk2.mp3").getPath(), chunks.get(1).getPath());
     }
-    
-    /**
-     * Mock implementation of IMediaRecorder for testing.
-     */
-    private static class MockMediaRecorder implements IMediaRecorder {
-        private final List<ProgramId> initializedPrograms = new ArrayList<>();
-        private final List<ProgramId> startedPrograms = new ArrayList<>();
-        private final Map<ProgramId, RecordingStatus> recordingStatuses = new ConcurrentHashMap<>();
-        private final Map<ProgramId, List<File>> chunkFiles = new ConcurrentHashMap<>();
-        
-        @Override
-        public void initBeforeRecording(ProgramDescriptorDTO programDescriptor) {
-            initializedPrograms.add(programDescriptor.getUuid());
-            recordingStatuses.put(programDescriptor.getUuid(), new RecordingStatus(RecordingStatus.Status.PENDING));
-        }
-        
-        @Override
-        public void startRecording(ProgramDescriptorDTO programDescriptor, Map<String, String> recorderSpecificParameters) {
-            startedPrograms.add(programDescriptor.getUuid());
-            recordingStatuses.put(programDescriptor.getUuid(), new RecordingStatus(RecordingStatus.Status.ONGOING));
-        }
-        
-        @Override
-        public void stopRecording(ProgramId programId) {
-            recordingStatuses.put(programId, new RecordingStatus(RecordingStatus.Status.COMPLETED));
-        }
-        
-        @Override
-        public Map<ProgramId, RecordingStatus> getRecordingStatuses() {
-            return new HashMap<>(recordingStatuses);
-        }
-        
-        @Override
-        public List<File> getChunkFiles(ProgramId programId, Instant day) {
-            return chunkFiles.getOrDefault(programId, new ArrayList<>());
-        }
-        
-        public List<ProgramId> getInitializedPrograms() {
-            return new ArrayList<>(initializedPrograms);
-        }
-        
-        public List<ProgramId> getStartedPrograms() {
-            return new ArrayList<>(startedPrograms);
-        }
-        
-        public void setRecordingStatus(ProgramId programId, RecordingStatus status) {
-            recordingStatuses.put(programId, status);
-        }
-        
-        public void setChunkFiles(ProgramId programId, List<File> files) {
-            chunkFiles.put(programId, files);
-        }
-    }
+
 }

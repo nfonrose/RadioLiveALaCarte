@@ -1,10 +1,5 @@
-package com.prtlabs.rlalc.integrationtesting;
+package com.prtlabs.rlalc.integrationtesting.realmediarecorder;
 
-import com.fasterxml.jackson.core.util.DefaultIndenter;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.inject.AbstractModule;
 import com.google.inject.Injector;
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
@@ -13,8 +8,12 @@ import com.prtlabs.rlalc.backend.mediacapture.services.RLALCMediaCaptureServiceI
 import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.IMediaCapturePlanningLoader;
 import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.IMediaRecorder;
 import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.ffmpeg.FFMpegRecorder;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.statemanagement.IRecordingStateManagementService;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.statemanagement.manifests.ManifestFileBasedRecordingStateManagementService;
 import com.prtlabs.rlalc.domain.ProgramId;
-import com.prtlabs.utils.json.PrtJsonUtils;
+import com.prtlabs.rlalc.integrationtesting.BaseRLALCMediaCaptureServiceTest;
+import com.prtlabs.rlalc.integrationtesting.MockMediaCapturePlanningLoader;
+import com.prtlabs.rlalc.integrationtesting.MockTimeProviderService;
 import com.prtlabs.utils.time.provider.IPrtTimeProviderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,10 +21,7 @@ import org.junit.jupiter.api.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
@@ -63,6 +59,7 @@ public class RLALCMediaCaptureServiceRealRecorderTest extends BaseRLALCMediaCapt
             @Override
             protected void configure() {
                 bind(IRLALCMediaCaptureService.class).to(RLALCMediaCaptureServiceImpl.class);
+                bind(IRecordingStateManagementService.class).to(ManifestFileBasedRecordingStateManagementService.class);
                 bind(IMediaCapturePlanningLoader.class).toInstance(mockPlanningLoader);
                 bind(IMediaRecorder.class).to(FFMpegRecorder.class);
                 bind(IPrtTimeProviderService.class).toInstance(mockTimeProvider);
@@ -118,7 +115,7 @@ public class RLALCMediaCaptureServiceRealRecorderTest extends BaseRLALCMediaCapt
             }
             
             // Check recording status
-            Map<ProgramId, RecordingStatus> statuses = mediaCaptureService.getRecordingStatuses();
+            Map<ProgramId, RecordingStatus> statuses = mediaCaptureService.getRecordingStatusesForCurrentDay();
             if (statuses.containsKey(testProgramId)) {
                 logger.info("Recording status: {}", statuses.get(testProgramId).getStatus());
                 if (statuses.get(testProgramId).getStatus() == RecordingStatus.Status.PARTIAL_FAILURE) {
