@@ -1,4 +1,4 @@
-version: '3.8'
+name: prt-rlalc-backend
 
 services:
   rlalc-backend-media-capture-service:

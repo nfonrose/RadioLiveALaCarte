@@ -194,16 +194,16 @@ task prtHelp {
     ────────────────────────────────────────────────────────────
 
     Usage:
-      ./gradlew run -Pprt.rlalc.baseDir=/path/to/@opt-prtlabs \\
-                    -Pprt.rlalc.confFileAbsolutePath=/path/to/conf/rlalc-media-capture.conf
+      gradle run -Pprt.rlalc.baseDir=. \\
+                 -Pprt.rlalc.confFileAbsolutePath=./deploy/conf.examples/rlalc-media-capture-batch-example001.conf
 
     Description of properties:
       -Pprt.rlalc.baseDir                → Base directory of your local installation.
       -Pprt.rlalc.confFileAbsolutePath   → Absolute path to the configuration file.
 
     Example:
-      ./gradlew run -Pprt.rlalc.baseDir=/Users/teevity/Dev/misc/@opt-prtlabs \\
-                    -Pprt.rlalc.confFileAbsolutePath=/Users/teevity/Dev/misc/@opt-prtlabs/radiolivealacarte/conf/rlalc-media-capture-batch-example001.conf
+      gradle run -Pprt.rlalc.baseDir=/Users/teevity/Dev/misc/@opt-prtlabs \\
+                 -Pprt.rlalc.confFileAbsolutePath=/Users/teevity/Dev/misc/@opt-prtlabs/radiolivealacarte/conf/rlalc-media-capture-batch-example001.conf
 
     You can also run without any -P options, in which case defaults will apply.
 
