@@ -220,3 +220,14 @@ You must use Mocks that you bind with Guice in order to:
 One of the tests classes must test the real FFMpegRecorder (without mocking the IMediaRecorder).
 In this case, use the IRLALCMediaCaptureService.getRecordingChunks(...) method to check if files have been created
 For this test, don't go in a crazy never ending loop if the test doesn't pass (because it might not work because of external reasons when using the real FFMpegRecorder)
+
+
+
+
+
+## -------------------------------------------------------------------------------------------------------------------
+
+### ----------------------------
+Can you add a `task prtPushDockerImageToGithubContainerRepo(type: Exec)` task.
+
+The project is pulled via `git clone https://github.com/eglantinefonrose/RadioLiveALaCarte.git`

@@ -131,6 +131,40 @@ task prtRunViaDocker(type: Exec) {
     }
 }
 
+task prtPushDockerImageToGithubContainerRepo(type: Exec) {
+    dependsOn prtBuildDockerImage
+    group = 'docker'
+    description = 'Pushes the Docker image to GitHub Container Registry'
+
+    // Define GitHub Container Registry URL and image name
+    def githubRegistry = "ghcr.io"
+    def githubUser = "eglantinefonrose"
+    def imageName = "prt-rlalc-backend-media-capture-service"
+    def imageTag = "${version}"
+    def fullImageName = "${githubRegistry}/${githubUser}/${imageName}:${imageTag}"
+
+    // Tag the local image with the GitHub Container Registry URL
+    commandLine 'docker', 'tag', 
+                "${imageName}:${imageTag}", 
+                "${fullImageName}"
+
+    doFirst {
+        println "Tagging Docker image [${imageName}:${imageTag}] as [${fullImageName}]"
+        println " -> Equivalent CLI command:"
+        println "      docker tag ${imageName}:${imageTag} ${fullImageName}"
+        println "\nPushing Docker image to GitHub Container Registry [${fullImageName}]"
+        println " -> Equivalent CLI command:"
+        println "      docker push ${fullImageName}\n"
+    }
+
+    // After tagging, push the image to GitHub Container Registry
+    doLast {
+        exec {
+            commandLine 'docker', 'push', "${fullImageName}"
+        }
+    }
+}
+
 
 task prtHelp {
     group = 'Help'
