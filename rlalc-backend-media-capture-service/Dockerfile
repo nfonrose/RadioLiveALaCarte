@@ -7,13 +7,13 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
-WORKDIR /opt/prtlabs/radioLiveALaCarte/
+WORKDIR /opt/prtlabs/radiolivealacarte/
 
 # Create logs directory
-RUN mkdir -p /opt/prtlabs/radioLiveALaCarte/logs/
+RUN mkdir -p /opt/prtlabs/radiolivealacarte/logs/
 
 # Copy the JAR file
-COPY ./build/libs/rlalc-backend-media-capture-service-1.0-SNAPSHOT.jar /opt/prtlabs/radioLiveALaCarte/rlalc-backend-media-capture-service.jar
+COPY ./build/libs/rlalc-backend-media-capture-service-0.1-SNAPSHOT.jar /opt/prtlabs/radiolivealacarte/rlalc-backend-media-capture-service.jar
 
 # Set the entrypoint
-ENTRYPOINT ["java", "-jar", "/opt/prtlabs/radioLiveALaCarte/rlalc-backend-media-capture-service.jar"]
+ENTRYPOINT ["java", "-jar", "/opt/prtlabs/radiolivealacarte/rlalc-backend-media-capture-service.jar"]

@@ -8,11 +8,9 @@ services:
     image: prt-rlalc-backend-media-capture-service:latest
     container_name: rlalc-backend-media-capture-service
     volumes:
-      - rlalc_backend_media_capture_service__logs:/opt/prtlabs/radioLiveALaCarte/logs
-      - rlalc_backend_media_capture_service__media:/opt/prtlabs/radioLiveALaCarte/media
-      - ${PRT_EXECUTION_BASE_DIR:-/opt/prtlabs}/radiolivealacarte/rlalc-media-capture-batch-example001.conf:/opt/prtlabs/radioLiveALaCarte/rlalc-backend-media-capture-service.conf
-    environment:
-      - JAVA_OPTS=-Dprt.rlalc.confFileAbsolutePath=/opt/prtlabs/radioLiveALaCarte/rlalc-backend-media-capture-service.conf
+      - rlalc_backend_media_capture_service__logs:/opt/prtlabs/radiolivealacarte/logs
+      - rlalc_backend_media_capture_service__media:/opt/prtlabs/radiolivealacarte/media
+      - ${PRT_EXECUTION_BASE_DIR:-/opt/prtlabs}/radiolivealacarte/conf/rlalc-media-capture-batch-example001.conf:/opt/prtlabs/radiolivealacarte/conf/rlalc-media-capture-batch.conf
     restart: unless-stopped
 
 volumes:

@@ -33,11 +33,11 @@ Create a Dockerfile for the rlalc-backend-media-capture-service project which sh
 
 The image should:
 - use a base openjdk 23 image
-- copy the ./build/libs/rlalc-backend-media-capture-service-1.0-SNAPSHOT.jar file into `/opt/prtlabs/radioLiveALaCarte/rlalc-backend-media-capture-service.jar`
+- copy the ./build/libs/rlalc-backend-media-capture-service-1.0-SNAPSHOT.jar file into `/opt/prtlabs/radiolivealacarte/rlalc-backend-media-capture-service.jar`
 - run it with `java -jar ` as the entrypoint
-- logs for the FILE appender should go to `/opt/prtlabs/radioLiveALaCarte/logs/` path which will be mapped to the `grvfm-media-capture-logs`volume in the docker compose file
+- logs for the FILE appender should go to `/opt/prtlabs/radiolivealacarte/logs/` path which will be mapped to the `grvfm-media-capture-logs`volume in the docker compose file
 - logs for the CONSOLE appender should go to stdout so that we can track them with `docker logs`
-- The working dir for the application should be `/opt/prtlabs/radioLiveALaCarte/` which will be mapped to the 'grvfm-media-capture-mediastorage' volume in the docker compose file
+- The working dir for the application should be `/opt/prtlabs/radiolivealacarte/` which will be mapped to the 'grvfm-media-capture-mediastorage' volume in the docker compose file
 
 
 ### ----------------------------

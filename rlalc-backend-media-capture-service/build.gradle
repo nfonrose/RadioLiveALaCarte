@@ -120,8 +120,9 @@ task prtRunViaDocker(type: Exec) {
     description = 'Runs the application using Docker'
 
     commandLine 'docker', 'run', '--rm', '-p', '8080:8080', 
-                '-v', "${projectDir}/logs:/opt/prtlabs/radioLiveALaCarte/logs", 
-                '-v', "${projectDir}/media:/opt/prtlabs/radioLiveALaCarte/media",
+                '-v', "${projectDir}/logs:/opt/prtlabs/radiolivealacarte/logs",
+                '-v', "${projectDir}/media:/opt/prtlabs/radiolivealacarte/media",
+                '-v', "${projectDir}/deploy/conf.examples/rlalc-media-capture-batch-example001.conf:/opt/prtlabs/radiolivealacarte/conf/rlalc-media-capture-batch.conf",
                 "prt-rlalc-backend-media-capture-service:${version}"
 
     doFirst {
