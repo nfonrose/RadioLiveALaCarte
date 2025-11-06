@@ -103,10 +103,10 @@ The Backend services for the GroovyMorningFM mobile application(s)
    git clone https://github.com/eglantinefonrose/RadioLiveALaCarte.git
    cd RadioLiveALaCarte
    ```
-2. Configure environment variables in `deploy/docker/params.env`.
+2. Configure environment variables in `deploy/docker/parameters.env`.
 3. Build and run services using Docker Compose:
    ```bash
-   docker-compose -f deploy/docker/docker-compose.yml up --build
+   docker-compose -f ./deploy/docker/docker-compose-full.yml --env-file ./deploy/docker/parameters.env  up --build 
    ```
 
 ## Development

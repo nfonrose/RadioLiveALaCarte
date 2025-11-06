@@ -1,5 +1,11 @@
 FROM openjdk:23
 
+# Install ffmpeg
+RUN apt-get update && \
+    apt-get install -y ffmpeg && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
 # Set the working directory
 WORKDIR /opt/prtlabs/radioLiveALaCarte/
 

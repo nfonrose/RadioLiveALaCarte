@@ -231,3 +231,14 @@ For this test, don't go in a crazy never ending loop if the test doesn't pass (b
 Can you add a `task prtPushDockerImageToGithubContainerRepo(type: Exec)` task.
 
 The project is pulled via `git clone https://github.com/eglantinefonrose/RadioLiveALaCarte.git`
+
+
+
+
+
+## -------------------------------------------------------------------------------------------------------------------
+
+### ----------------------------
+Can you create a Docker composition, in a `./deploy/docker-composition.yml` file, that can be used to start this `rlac-backend-media-capture-service`?
+
+It does not expose an API or a UI so we don't need a sidecar container with a reverse proxy.

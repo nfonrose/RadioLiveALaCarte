@@ -131,6 +131,23 @@ task prtRunViaDocker(type: Exec) {
     }
 }
 
+
+task prtRunViaDockerCompose(type: Exec) {
+    group = 'docker'
+    description = 'Runs the application using Docker'
+
+    commandLine 'docker', 'run', '--rm', '-p', '8080:8080',
+            '-v', "${projectDir}/logs:/opt/prtlabs/radioLiveALaCarte/logs",
+            '-v', "${projectDir}/media:/opt/prtlabs/radioLiveALaCarte/media",
+            "prt-rlalc-backend-media-capture-service:${version}"
+
+    doFirst {
+        println "Running Docker container [prt-rlalc-backend-media-capture-service:${version}]"
+        println " -> Equivalent CLI command:"
+        println "      docker run --rm -p 8080:8080 -v ${projectDir}/logs:/opt/prtlabs/radioLiveALaCarte/logs -v ${projectDir}/media:/opt/prtlabs/radioLiveALaCarte/media prt-rlalc-backend-media-capture-service:${version}\n"
+    }
+}
+
 task prtPushDockerImageToGithubContainerRepo(type: Exec) {
     dependsOn prtBuildDockerImage
     group = 'docker'
