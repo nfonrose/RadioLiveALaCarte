@@ -3,7 +3,7 @@ name: prt-rlalc-backend
 services:
   rlalc-backend-media-capture-service:
     build:
-      context: ..
+      context: ../..
       dockerfile: Dockerfile
     image: prt-rlalc-backend-media-capture-service:latest
     container_name: rlalc-backend-media-capture-service

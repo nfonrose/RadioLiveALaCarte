@@ -26,7 +26,7 @@ gradle prtRunViaDocker
 cd ${RLAC_PROJECT_BASEDIR}
 cd ./rlalc-backend-media-capture-service
 docker compose \
-    -f ./deploy/docker-composition_rlalc-backend-media-capture-service.yml \
-    --env-file ./deploy/parameters.env \
+    -f ./deploy/docker/docker-composition_rlalc-backend-media-capture-service.yml \
+    --env-file ./deploy/docker/parameters.env \
     up --build
 ```

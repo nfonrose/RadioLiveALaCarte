@@ -128,7 +128,11 @@ task prtRunViaDocker(type: Exec) {
     doFirst {
         println "Running Docker container [prt-rlalc-backend-media-capture-service:${version}]"
         println " -> Equivalent CLI command:"
-        println "      docker run --rm -p 8080:8080 -v ${projectDir}/logs:/opt/prtlabs/radioLiveALaCarte/logs -v ${projectDir}/media:/opt/prtlabs/radioLiveALaCarte/media prt-rlalc-backend-media-capture-service:${version}\n"
+        println "      docker run --rm -p 8080:8080"
+        println "          -v ${projectDir}/logs:/opt/prtlabs/radiolivealacarte/logs"
+        println "          -v ${projectDir}/media:/opt/prtlabs/radiolivealacarte/media"
+        println "          -v ${projectDir}deploy/conf.examples/rlalc-media-capture-batch-example001.conf:/opt/prtlabs/radiolivealacarte/conf/rlalc-media-capture-batch.conf"
+        println "          prt-rlalc-backend-media-capture-service:${version} \n"
     }
 }
 
@@ -137,15 +141,15 @@ task prtRunViaDockerCompose(type: Exec) {
     group = 'docker'
     description = 'Runs the application using Docker'
 
-    commandLine 'docker', 'run', '--rm', '-p', '8080:8080',
-            '-v', "${projectDir}/logs:/opt/prtlabs/radioLiveALaCarte/logs",
-            '-v', "${projectDir}/media:/opt/prtlabs/radioLiveALaCarte/media",
-            "prt-rlalc-backend-media-capture-service:${version}"
+    commandLine "docker", "compose",
+            "-f", "./deploy/docker/docker-composition_rlalc-backend-media-capture-service.yml",
+            "--env-file", "./deploy/docker/parameters.env",
+            "up"
 
     doFirst {
-        println "Running Docker container [prt-rlalc-backend-media-capture-service:${version}]"
+        println "Running Docker composition [docker-composition_rlalc-backend-media-capture-service.yml]"
         println " -> Equivalent CLI command:"
-        println "      docker run --rm -p 8080:8080 -v ${projectDir}/logs:/opt/prtlabs/radioLiveALaCarte/logs -v ${projectDir}/media:/opt/prtlabs/radioLiveALaCarte/media prt-rlalc-backend-media-capture-service:${version}\n"
+        println "      docker compose -f ./deploy/docker/docker-composition_rlalc-backend-media-capture-service.yml --env-file ./deploy/docker/parameters.env up \n"
     }
 }
 
@@ -194,15 +198,20 @@ task prtHelp {
      RadioLiveALaCarte - PRT Helper
     ────────────────────────────────────────────────────────────
 
+
+
     Usage:
-      gradle run -Pprt.rlalc.baseDir=. \\
-                 -Pprt.rlalc.confFileAbsolutePath=./deploy/conf.examples/rlalc-media-capture-batch-example001.conf
+      gradle run -Pprt.rlalc.baseDir=<BASEDIR>. \\
+                 -Pprt.rlalc.confFileAbsolutePath=<PATH_ABSOLUTE_OR_RELATIVE_TO_CONF_FILE>
 
     Description of properties:
       -Pprt.rlalc.baseDir                → Base directory of your local installation.
       -Pprt.rlalc.confFileAbsolutePath   → Absolute path to the configuration file.
 
-    Example:
+    Examples:
+      gradle run -Pprt.rlalc.baseDir=. \\
+                 -Pprt.rlalc.confFileAbsolutePath=./deploy/conf.examples/rlalc-media-capture-batch-example001.conf
+
       gradle run -Pprt.rlalc.baseDir=/Users/teevity/Dev/misc/@opt-prtlabs \\
                  -Pprt.rlalc.confFileAbsolutePath=/Users/teevity/Dev/misc/@opt-prtlabs/radiolivealacarte/conf/rlalc-media-capture-batch-example001.conf
 
