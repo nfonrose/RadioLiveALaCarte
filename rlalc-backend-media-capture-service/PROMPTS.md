@@ -242,3 +242,12 @@ The project is pulled via `git clone https://github.com/eglantinefonrose/RadioLi
 Can you create a Docker composition, in a `./deploy/docker-composition.yml` file, that can be used to start this `rlac-backend-media-capture-service`?
 
 It does not expose an API or a UI so we don't need a sidecar container with a reverse proxy.
+
+
+
+
+
+## -------------------------------------------------------------------------------------------------------------------
+
+### ----------------------------
+Modify the `prtBuildDockerImage` Gradle task so that on top of tagging the image with its version it also tags it with latest

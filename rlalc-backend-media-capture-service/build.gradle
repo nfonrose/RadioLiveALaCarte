@@ -104,14 +104,23 @@ wrapper {
 task prtBuildDockerImage(type: Exec) {
     dependsOn jar
     group = 'docker'
-    description = 'Builds the Docker image for the application'
+    description = 'Builds the Docker image for the application and tags it with version and latest'
 
     commandLine 'docker', 'build', '-t', "prt-rlalc-backend-media-capture-service:${version}", '.'
 
     doFirst {
-        println "Building Docker image [prt-rlalc-backend-media-capture-service:${version}]"
+        println "Building Docker image [prt-rlalc-backend-media-capture-service:${version}] and tagging it"
         println " -> Equivalent CLI command:"
-        println "      docker build -t prt-rlalc-backend-media-capture-service:${version} .\n"
+        println "      docker build -t prt-rlalc-backend-media-capture-service:${version} ."
+        println "      docker tag prt-rlalc-backend-media-capture-service:${version} prt-rlalc-backend-media-capture-service:latest\n"
+    }
+
+    doLast {
+        exec {
+            commandLine 'docker', 'tag', 
+                        "prt-rlalc-backend-media-capture-service:${version}", 
+                        "prt-rlalc-backend-media-capture-service:latest"
+        }
     }
 }
 
@@ -156,14 +165,15 @@ task prtRunViaDockerCompose(type: Exec) {
 task prtPushDockerImageToGithubContainerRepo(type: Exec) {
     dependsOn prtBuildDockerImage
     group = 'docker'
-    description = 'Pushes the Docker image to GitHub Container Registry'
+    description = 'Pushes the Docker image to GitHub Container Registry with version and latest tags'
 
     // Define GitHub Container Registry URL and image name
     def githubRegistry = "ghcr.io"
-    def githubUser = "eglantinefonrose"
+    def githubUser = "nfonrose"
     def imageName = "prt-rlalc-backend-media-capture-service"
     def imageTag = "${version}"
     def fullImageName = "${githubRegistry}/${githubUser}/${imageName}:${imageTag}"
+    def fullImageNameLatest = "${githubRegistry}/${githubUser}/${imageName}:latest"
 
     // Tag the local image with the GitHub Container Registry URL
     commandLine 'docker', 'tag', 
@@ -171,18 +181,29 @@ task prtPushDockerImageToGithubContainerRepo(type: Exec) {
                 "${fullImageName}"
 
     doFirst {
-        println "Tagging Docker image [${imageName}:${imageTag}] as [${fullImageName}]"
+        println "Pushing (and tagging with version and latest) Docker image to GitHub Container Registry [${imageName}:${imageTag}] as [${fullImageName}]"
         println " -> Equivalent CLI command:"
         println "      docker tag ${imageName}:${imageTag} ${fullImageName}"
-        println "\nPushing Docker image to GitHub Container Registry [${fullImageName}]"
-        println " -> Equivalent CLI command:"
-        println "      docker push ${fullImageName}\n"
+        println "      docker tag ${imageName}:latest ${fullImageNameLatest}"
+        println "      docker push ${fullImageName}"
+        println "      docker push ${fullImageNameLatest}\n"
     }
 
     // After tagging, push the image to GitHub Container Registry
     doLast {
         exec {
             commandLine 'docker', 'push', "${fullImageName}"
+        }
+
+        // Tag and push the latest version
+        exec {
+            commandLine 'docker', 'tag', 
+                        "${imageName}:latest", 
+                        "${fullImageNameLatest}"
+        }
+
+        exec {
+            commandLine 'docker', 'push', "${fullImageNameLatest}"
         }
     }
 }
