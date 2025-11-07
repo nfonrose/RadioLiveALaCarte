@@ -104,23 +104,24 @@ wrapper {
 task prtBuildDockerImage(type: Exec) {
     dependsOn jar
     group = 'docker'
-    description = 'Builds the Docker image for the application and tags it with version and latest'
+    description = 'Builds a multi-architecture Docker image and tags it with version and latest'
 
-    commandLine 'docker', 'build', '-t', "prt-rlalc-backend-media-capture-service:${version}", '.'
+    def imageName = "prt-rlalc-backend-media-capture-service"
+    def imageVersion = "${version}"
+
+    // Buildx command: multi-platform
+    commandLine 'docker', 'buildx', 'build',
+            '--platform', 'linux/amd64,linux/arm64',
+            '-t', "${imageName}:${imageVersion}",
+            '-t', "${imageName}:latest",
+            '--load', // Need with buildx so that Docker loads the image locally (for testing)
+            '.'
 
     doFirst {
-        println "Building Docker image [prt-rlalc-backend-media-capture-service:${version}] and tagging it"
+        println "Building multi-arch Docker image [${imageName}:${imageVersion}]"
+        println " -> Platforms: linux/amd64, linux/arm64"
         println " -> Equivalent CLI command:"
-        println "      docker build -t prt-rlalc-backend-media-capture-service:${version} ."
-        println "      docker tag prt-rlalc-backend-media-capture-service:${version} prt-rlalc-backend-media-capture-service:latest\n"
-    }
-
-    doLast {
-        exec {
-            commandLine 'docker', 'tag', 
-                        "prt-rlalc-backend-media-capture-service:${version}", 
-                        "prt-rlalc-backend-media-capture-service:latest"
-        }
+        println "      docker buildx build --platform linux/amd64,linux/arm64 -t ${imageName}:${imageVersion} -t ${imageName}:latest --load .\n"
     }
 }
 
@@ -128,20 +129,20 @@ task prtRunViaDocker(type: Exec) {
     group = 'docker'
     description = 'Runs the application using Docker'
 
-    commandLine 'docker', 'run', '--rm', '-p', '8080:8080', 
+    commandLine 'docker', 'run', '-it', '--rm', '-p', '8080:8080',
                 '-v', "${projectDir}/logs:/opt/prtlabs/radiolivealacarte/logs",
                 '-v', "${projectDir}/media:/opt/prtlabs/radiolivealacarte/media",
                 '-v', "${projectDir}/deploy/conf.examples/rlalc-media-capture-batch-example001.conf:/opt/prtlabs/radiolivealacarte/conf/rlalc-media-capture-batch.conf",
-                "prt-rlalc-backend-media-capture-service:${version}"
+                "prt-rlalc-backend-media-capture-service:latest"
 
     doFirst {
-        println "Running Docker container [prt-rlalc-backend-media-capture-service:${version}]"
+        println "Running Docker container [prt-rlalc-backend-media-capture-service:latest]"
         println " -> Equivalent CLI command:"
-        println "      docker run --rm -p 8080:8080"
-        println "          -v ${projectDir}/logs:/opt/prtlabs/radiolivealacarte/logs"
-        println "          -v ${projectDir}/media:/opt/prtlabs/radiolivealacarte/media"
-        println "          -v ${projectDir}deploy/conf.examples/rlalc-media-capture-batch-example001.conf:/opt/prtlabs/radiolivealacarte/conf/rlalc-media-capture-batch.conf"
-        println "          prt-rlalc-backend-media-capture-service:${version} \n"
+        println "      docker run -it --rm  \\"
+        println "          -v ${projectDir}/logs:/opt/prtlabs/radiolivealacarte/logs \\"
+        println "          -v ${projectDir}/media:/opt/prtlabs/radiolivealacarte/media \\"
+        println "          -v ${projectDir}/deploy/conf.examples/rlalc-media-capture-batch-example001.conf:/opt/prtlabs/radiolivealacarte/conf/rlalc-media-capture-batch.conf \\"
+        println "          prt-rlalc-backend-media-capture-service:latest \n"
     }
 }
 
