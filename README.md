@@ -1,37 +1,186 @@
-# RADIO LIVE A LA CARTE
 
-## Player
+# GroovyMorningFM and the RadioLiveALaCarte platform
 
-- Le player permet de <strong>naviguer</strong> entre les <strong>programmes</strong> sélectionnées au préalable par l'utilisateur.
-- Les <strong>programmes</strong> correspondent à une <strong>plage horaire</strong> d'une <strong>radio spécifique</strong>, informations qui sont toutes les deux <strong>choisies par l'utilisateur</strong>.
-- Si jamais une émission est en <strong>cours de diffusion</strong>, il est possible de <strong>l'écouter</strong>, cependant l'émission aura un <strong>retard de 10 sec</strong> dû à l'utilisation de <strong>segments</strong> de 10 secondes chacuns.
+**RadioLiveALaCarte** is a platform designed to deliver a customizable "live radio" experience, focusing on morning programs. The platform achieves this through **modular backend services** that capture, store, and enrich **audio segments with metadata and embeddings for advanced media analysis**. Built on technologies like **LanceDB** and **RustFS**, it supports efficient storage and processing of audio data, paired with a mobile iOS interface for seamless user interaction.
 
-## L'application mobile
+**GroovyMorningFM** is a consummer app, powered by the RadioLiveALaCarte platform, whose users can listen to live radio broadcasts and swap out segments they don’t like with others from the same station, including recent segments (e.g., from minutes ago, not yet available as podcasts) or earlier ones from hours before, creating a **personalized "à la carte" radio experience**.
 
-- L'application mobile permet aux utilisateurs de <strong>créer des programmes</strong> et de <strong>les écouter</strong> par la suite grâce au player de l'<strong>application</strong>.
-- Afin de capturer au mieux les programmes, de l'**intelligence artificielle** est utilisée pour détecter le **début** et la **fin** des programmes, qui sont recadrés ensuite. Afin de ne pas perdre les programmes originaux possiblement **trop raccourcis**, il est possible pour les utilisateurs d'écouter la **version raccourcie** ou la **version originale**.
-[Demo_1_InterfaceGlobale_RadioLiveALaCarte.mov](@docs/assets/Demo_1_RadioLiveALaCarte.mov)
-
-## Généralités sur l'interface (site web)
-
-- À la manière d'une <strong>playlist</strong> sur une application de musique, l'utilisateur a une vision sur les <strong>programmes disponibles à l'écoute</strong> et voit le programme qu'il est entrain d'écouter s'afficher en <strong>gras</strong>.
-
-- Visionnez une démonstration de l'aaplication mobile grâce à ce lien :
-https://youtube.com/shorts/tYgbUoxxm8s
-
-## Création de programme pour l'utilisateur
-
-- À ce stade de la création de l'application, l'utilisateur a le monopole sur les décisions sur les plages horaires des programmes qu'il souhaite écouter. L'interface lui permet donc de sélectionner la radio qu'il souhaite écouter aux horaires (voir vidéo).
-
-[Demo_2_CreationDeProgramme_RadioLiveALaCarte.mov](@docs/assets/RadioLiveALaCarte-Demo-ProgramCreation.mov)
-
-- NB : Dans l'idéal, l'utilisateur souhaiterait également pouvoir accéder au programme réel des émissions des radios qu'il souhaiterait écouter.
-
-## Détails techniques
-
-- Dans un cas *réaliste*, les programmes radios sont souvent **décalés dans le temps** à cause des **imprévus possibles** (accumulation de retards des émissions précédentes d'une taille variable par exemple).
-Afin de régler ce soucis, j'ai commencé une phase de *Recherche et Développement* qui utilise des **modèles d'IA** pour détecter le début et la fin *réelle* d'un programme radio.  
-Cette partie est disponible dans la branche [RD_BRANCH_IdentificationIntelligenteTransitionsEntreProgrammesRadio](https://github.com/eglantinefonrose/RadioLiveALaCarte/tree/RD_BRANCH_IdentificationIntelligenteTransitionsEntreProgrammesRadio) :)
+Check the [Glossary](README.md#glossary) for a precise definition of the terms used.
 
 
 
+
+
+
+# Project Structure
+
+```
+.
+├── LICENSE.txt
+├── README.md
+├── deploy                                               # Global Docker Compose based deployment files with example configuration
+│   ├── conf
+│   │   └── grvfm-backend-media-capture-service-example001.conf
+│   └── docker
+│       ├── docker-compose.yml
+│       └── params.env
+├── grvfm-backend-services                               # GroovyMorningFM backend services
+│   ├── Dockerfile
+│   ├── README.md
+│   └── grvfm-backend-media-capture-service.conf
+├── grvfm-ui-mobile-ios                                  # GroovyMorningFM iOS Mobile App
+├── rlalc-backend-common
+├── rlalc-backend-media-capture-service                  # RadioLiveALaCarte Media capture service  
+│   ├── Dockerfile
+│   ├── README.md
+│   └── rlalc-backend-media-capture-service.conf
+├── rlalc-backend-media-datastore                        # RadioLiveALaCarte Media and metadata datastore service  
+│   └── README.md
+├── rlalc-backend-media-labeler-ai-audio-analysis        # RadioLiveALaCarte Media labeller - based on AI audio transscription and analysis
+│   ├── Dockerfile
+│   └── README.md
+└── rlalc-backend-media-labeler-basic-schedule           # RadioLiveALaCarte Media labeller - based on theoritical radio schedules
+    ├── Dockerfile
+    └── README.md
+```
+
+
+
+
+
+
+# Components
+
+
+
+## RadioLiveALaCarte
+
+### rlalc-backend-media-capture-service
+Captures audio segments from radio broadcasts using tools like `ffmpeg`. It records audio streams, handles network buffering, and stores raw segments in the datastore.
+
+### rlalc-backend-media-datastore
+A storage layer built on **LanceDB** and **RustFS**, responsible for:
+- Storing raw audio segments from the capture service.
+- Storing metadata and annotations generated by metadata generation components.
+- Supporting embeddings/vectors (e.g., audio signatures, textual meaning vectors) for AI-driven analysis.
+
+See [rlalc-backend-media-datastore/README-rlalc-backend-media-datastore.md](rlalc-backend-media-datastore/README-rlalc-backend-media-datastore.md) for details.
+
+### rlalc-backend-media-labeler-...
+A family of batch components that generate metadata and annotations for [Segments](./README.md#segment-rlac). These metadata and annotations can be embeddings (e.g., audio signatures, textual meaning vectors, ...) or any other type (text, URLs, ...). Examples include:
+- **rlalc-backend-media-labeler-basic-schedule**: Uses official radio program schedules and recording timestamps to assign metadata like *'segment-approx-programid'*, *'segment-approx-programsegmentid'* and *'segment-time-recordingtimestart'*.
+- **rlalc-backend-media-labeler-ai-audio-analysis**: Employs AI techniques (e.g., voice recognition, text analysis) to generate advanced metadata like *'segment-time-realtimestart'*, *'segment-real-programid'*, *'segment-real-progsegmentid'* or *'segment-content-summary'* and *'segment-content-transcript'*.
+- ...
+
+REMARK: The *'segment-source-radioid'* and *'segment-time-recordingtimestart'* are always provided by the 'rlalc-backend-media-capture-service'.
+
+### 4. rlalc-backend-common
+Shared libraries, utilities, and configurations used across backend services.
+
+
+
+## GroovyMorningFM
+
+### 5. grvfm-ui-mobile-ios
+The GroovyMorningFM iOS mobile application to create and listen to custom "à la carte" radio experiences.
+
+### 6. grvfm-ui-mobile-backend
+The Backend services for the GroovyMorningFM mobile application(s)
+
+
+
+
+
+
+# Getting Started
+
+## Prerequisites
+- Docker and Docker Compose
+
+## Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/eglantinefonrose/RadioLiveALaCarte.git
+   cd RadioLiveALaCarte
+   ```
+2. Configure environment variables in `deploy/docker/params.env`.
+3. Build and run services using Docker Compose:
+   ```bash
+   docker-compose -f deploy/docker/docker-compose.yml up --build
+   ```
+
+## Development
+- Each component has its own `Dockerfile` and `docker-compose.yml` for isolated development.
+- Add new metadata generation components under the `rlalc-backend-media-metadatagen-<technique>-<specificity>` naming convention.
+
+
+
+
+
+
+# Contributing
+Contributions are welcome! Please follow these steps:
+1. Fork the repository.
+2. Create a feature branch (`git checkout -b feature/your-feature`).
+3. Commit changes (`git commit -m 'Add your feature'`).
+4. Push to the branch (`git push origin feature/your-feature`).
+5. Open a pull request.
+
+
+
+
+
+
+
+# Glossary
+
+This glossary helps disambiguate terms which might have different meanings in different contexts.
+
+
+
+## RadioLiveALaCarte
+
+#### User (RLAC)
+An administrator of the RadioLiveALaCarte platform that can perform actions on it.
+
+#### Segment (RLAC)
+Media file with a standardize usually short length (10s or 30s most of the time) captured, stored and processed by the RLALC platform.
+
+#### Media Datastore
+The component in charge of storing media files and associated metadata and annotation, and in charge of allowing requests to be made on it.
+
+
+
+
+## GroovyMorningFM
+
+#### User (GMFM)
+A person using the GroovyMorningFM app to customize the way they listen to live radio.
+
+#### Custom schedule
+The schedule created by a [user](./README.md#user-gmfm). It is always based on a [predefined schedule](./README.md#predefined-schedule-of-a-program) of a Radio, and customized by switching some [Segments](./README.md#program-segment-aka-segment-gmfm) with others.
+
+#### Program
+A consistent set of [Segments](./README.md#program-segment-aka-segment-gmfm) which usually have a clearly defined title, time of start, duration and cadence (daily, only on Saturdays, ...)
+
+#### Predefined schedule (of a Program)
+The order and duration of all the [Segments](./README.md#program-segment-aka-segment-gmfm) that make up a [Program](./README.md#program).
+
+#### Program-segment aka Segment (GMFM)
+Sub-section inside a [Program](./README.md#program) (for instance, the "3 minutes long economic segment" in the "France Inter" 7am-10am morning program).
+To avoid ambiguities with the Segment term in RLALC this can be referred to as "Program segment".
+
+
+
+
+
+# License
+[MIT License](LICENSE.txt)
+
+
+
+
+
+
+# Contact
+For questions or feedback, please open an issue or contact the maintainers at `hello@groovymorningfm.tee-xprmnt.ovh`
