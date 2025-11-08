@@ -31,7 +31,7 @@ public class ConfigFileBased_MediaCapturePlanningLoader implements IMediaCapture
      */
     public MediaCapturePlanningDTO loadMediaCapturePlanning() {
         // Use the configuration file pointed to by 'prt.rlalc.confFileAbsolutePath' or default to the one under PRTLABS_BASEDIR
-        String configFilePath = System.getProperty("prt.rlalc.confFileAbsolutePath", (PRTLABS_BASEDIR+"/radiolivealacarte/conf/rlalc-media-capture-batch.conf"));
+        String configFilePath = System.getProperty("prt.rlalc.confFileAbsolutePath", (PRTLABS_BASEDIR+"/radiolivealacarte/conf/rlalc-backend-media-capture-service.conf"));
         return fromFile(new File(configFilePath));
     }
 

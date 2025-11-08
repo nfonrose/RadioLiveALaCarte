@@ -132,7 +132,7 @@ task prtRunViaDocker(type: Exec) {
     commandLine 'docker', 'run', '-it', '--rm', '-p', '8080:8080',
                 '-v', "${projectDir}/logs:/opt/prtlabs/radiolivealacarte/logs",
                 '-v', "${projectDir}/media:/opt/prtlabs/radiolivealacarte/media",
-                '-v', "${projectDir}/deploy/conf.examples/rlalc-media-capture-batch-example001.conf:/opt/prtlabs/radiolivealacarte/conf/rlalc-media-capture-batch.conf",
+                '-v', "${projectDir}/deploy/conf.examples/rlalc-backend-media-capture-service-example001.conf:/opt/prtlabs/radiolivealacarte/conf/rlalc-backend-media-capture-service.conf",
                 "prt-rlalc-backend-media-capture-service:latest"
 
     doFirst {
@@ -141,7 +141,7 @@ task prtRunViaDocker(type: Exec) {
         println "      docker run -it --rm  \\"
         println "          -v ${projectDir}/logs:/opt/prtlabs/radiolivealacarte/logs \\"
         println "          -v ${projectDir}/media:/opt/prtlabs/radiolivealacarte/media \\"
-        println "          -v ${projectDir}/deploy/conf.examples/rlalc-media-capture-batch-example001.conf:/opt/prtlabs/radiolivealacarte/conf/rlalc-media-capture-batch.conf \\"
+        println "          -v ${projectDir}/deploy/conf.examples/rlalc-backend-media-capture-service-example001.conf:/opt/prtlabs/radiolivealacarte/conf/rlalc-backend-media-capture-service.conf \\"
         println "          prt-rlalc-backend-media-capture-service:latest \n"
     }
 }
@@ -232,10 +232,10 @@ task prtHelp {
 
     Examples:
       gradle run -Pprt.rlalc.baseDir=. \\
-                 -Pprt.rlalc.confFileAbsolutePath=./deploy/conf.examples/rlalc-media-capture-batch-example001.conf
+                 -Pprt.rlalc.confFileAbsolutePath=./deploy/conf.examples/rlalc-backend-media-capture-service-example001.conf
 
       gradle run -Pprt.rlalc.baseDir=/Users/teevity/Dev/misc/@opt-prtlabs \\
-                 -Pprt.rlalc.confFileAbsolutePath=/Users/teevity/Dev/misc/@opt-prtlabs/radiolivealacarte/conf/rlalc-media-capture-batch-example001.conf
+                 -Pprt.rlalc.confFileAbsolutePath=/Users/teevity/Dev/misc/@opt-prtlabs/radiolivealacarte/conf/rlalc-backend-media-capture-service-example001.conf
 
     You can also run without any -P options, in which case defaults will apply.
 

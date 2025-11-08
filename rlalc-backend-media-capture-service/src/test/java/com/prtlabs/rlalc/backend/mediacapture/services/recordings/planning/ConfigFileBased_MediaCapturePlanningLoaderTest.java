@@ -36,7 +36,7 @@ public class ConfigFileBased_MediaCapturePlanningLoaderTest {
 
         // Load the configuration
         // REMARK: As the test is not overriding the default Guice injector, this code will load the MediaCapturePlanning from a file
-        //         which is expected to be /Users/teevity/Dev/misc/@opt-prtlabs/radiolivealacarte/conf/rlalc-media-capture-batch-example001.conf
+        //         which is expected to be /Users/teevity/Dev/misc/@opt-prtlabs/radiolivealacarte/conf/rlalc-backend-media-capture-service-example001.conf
         //         if the 'prt.rlalc.baseDir' System property is set to '/Users/teevity/Dev/misc/@opt-prtlabs'
         MediaCapturePlanningDTO planning = mediaCapturePlanningService.loadMediaCapturePlanning();
 

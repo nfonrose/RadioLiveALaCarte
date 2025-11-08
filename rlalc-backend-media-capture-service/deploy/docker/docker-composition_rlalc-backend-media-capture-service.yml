@@ -10,7 +10,7 @@ services:
     volumes:
       - rlalc_backend_media_capture_service__logs:/opt/prtlabs/radiolivealacarte/logs
       - rlalc_backend_media_capture_service__media:/opt/prtlabs/radiolivealacarte/media
-      - ${PRT_EXECUTION_BASE_DIR:-/opt/prtlabs}/radiolivealacarte/conf/rlalc-media-capture-batch-example001.conf:/opt/prtlabs/radiolivealacarte/conf/rlalc-media-capture-batch.conf
+      - ${PRT_EXECUTION_BASE_DIR:-/opt/prtlabs}/radiolivealacarte/conf/rlalc-backend-media-capture-service-example001.conf:/opt/prtlabs/radiolivealacarte/conf/rlalc-backend-media-capture-service.conf
     restart: unless-stopped
 
 volumes:

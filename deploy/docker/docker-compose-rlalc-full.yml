@@ -9,7 +9,7 @@ services:
     container_name: rlalc-backend-media-capture-service
     volumes:
       - rlalc_backend_media_capture_service__logs:/opt/prtlabs/radiolivealacarte/logs
-      - rlalc_backend_media_capture_service__media:/opt/prtlabs/radiolivealacarte/media
+      - rlalc_backend_media_capture_service__media:/opt/prtlabs/radiolivealacarte/datastore/media
       - ${PRT_EXECUTION_BASE_DIR:-/opt/prtlabs}/radiolivealacarte/conf/rlalc-backend-media-capture-service.conf:/opt/prtlabs/radiolivealacarte/conf/rlalc-backend-media-capture-service.conf
     restart: unless-stopped
 
