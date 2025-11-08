@@ -22,3 +22,5 @@ gradlew*
 
 # Other misc files
 **/.DS_Store
+rlalc-backend-media-capture-service/logs
+/.idea

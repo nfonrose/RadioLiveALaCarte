@@ -1,0 +1,4 @@
+rootProject.name = 'rlalc-backend-media-capture-service'
+
+include ':rlalc-backend-common'
+project(':rlalc-backend-common').projectDir = new File("../rlalc-backend-common")

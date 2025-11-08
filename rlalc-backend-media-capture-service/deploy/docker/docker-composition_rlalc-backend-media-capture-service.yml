@@ -1,0 +1,20 @@
+name: prt-rlalc-backend
+
+services:
+  rlalc-backend-media-capture-service:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: prt-rlalc-backend-media-capture-service:latest
+    container_name: rlalc-backend-media-capture-service
+    volumes:
+      - rlalc_backend_media_capture_service__logs:/opt/prtlabs/radiolivealacarte/logs
+      - rlalc_backend_media_capture_service__media:/opt/prtlabs/radiolivealacarte/media
+      - ${PRT_EXECUTION_BASE_DIR:-/opt/prtlabs}/radiolivealacarte/conf/rlalc-backend-media-capture-service-example001.conf:/opt/prtlabs/radiolivealacarte/conf/rlalc-backend-media-capture-service.conf
+    restart: unless-stopped
+
+volumes:
+  rlalc_backend_media_capture_service__logs:
+    driver: local
+  rlalc_backend_media_capture_service__media:
+    driver: local

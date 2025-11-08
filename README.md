@@ -103,10 +103,10 @@ The Backend services for the GroovyMorningFM mobile application(s)
    git clone https://github.com/eglantinefonrose/RadioLiveALaCarte.git
    cd RadioLiveALaCarte
    ```
-2. Configure environment variables in `deploy/docker/params.env`.
+2. Configure environment variables in `deploy/docker/parameters.env`.
 3. Build and run services using Docker Compose:
    ```bash
-   docker-compose -f deploy/docker/docker-compose.yml up --build
+   docker-compose -f ./deploy/docker/docker-compose-full.yml --env-file ./deploy/docker/parameters.env  up --build 
    ```
 
 ## Development
@@ -119,6 +119,18 @@ The Backend services for the GroovyMorningFM mobile application(s)
 
 
 # Contributing
+
+## Development tech stack
+
+### Java
+We use SDKMAN to install/choose which version of the Java ecosystem tools we use.
+
+Here are the versions used for the Java based components 
+```bash
+sdk use java 23.0.2-zulu
+sdk use gradle 8.10
+```
+
 Contributions are welcome! Please follow these steps:
 1. Fork the repository.
 2. Create a feature branch (`git checkout -b feature/your-feature`).
@@ -143,7 +155,7 @@ This glossary helps disambiguate terms which might have different meanings in di
 #### User (RLAC)
 An administrator of the RadioLiveALaCarte platform that can perform actions on it.
 
-#### Segment (RLAC)
+#### Segment (RLAC) aka Chunk
 Media file with a standardize usually short length (10s or 30s most of the time) captured, stored and processed by the RLALC platform.
 
 #### Media Datastore
@@ -160,13 +172,13 @@ A person using the GroovyMorningFM app to customize the way they listen to live 
 #### Custom schedule
 The schedule created by a [user](./README.md#user-gmfm). It is always based on a [predefined schedule](./README.md#predefined-schedule-of-a-program) of a Radio, and customized by switching some [Segments](./README.md#program-segment-aka-segment-gmfm) with others.
 
-#### Program
+#### Program (aka Emission FR)
 A consistent set of [Segments](./README.md#program-segment-aka-segment-gmfm) which usually have a clearly defined title, time of start, duration and cadence (daily, only on Saturdays, ...)
 
 #### Predefined schedule (of a Program)
 The order and duration of all the [Segments](./README.md#program-segment-aka-segment-gmfm) that make up a [Program](./README.md#program).
 
-#### Program-segment aka Segment (GMFM)
+#### Program-segment aka Segment (GMFM) (aka Chronique FR)
 Sub-section inside a [Program](./README.md#program) (for instance, the "3 minutes long economic segment" in the "France Inter" 7am-10am morning program).
 To avoid ambiguities with the Segment term in RLALC this can be referred to as "Program segment".
 

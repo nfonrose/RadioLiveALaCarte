@@ -1,0 +1,66 @@
+package com.prtlabs.rlalc.backend.mediacapture.services;
+
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.IMediaCapturePlanningLoader;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.loaders.codedefined.StaticallyDefined_MediaCapturePlanningLoader;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.IMediaRecorder;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.ffmpeg.FFMpegRecorder;
+import com.prtlabs.utils.config.PrtConfigHelper;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.time.Instant;
+import java.time.ZoneId;
+
+
+/**
+ * Integration test for {@link IRLALCMediaCaptureService} using the real {@link FFMpegRecorder}.
+ */
+public class RLALCMediaCaptureServiceIntegrationTest {
+
+    private static final Logger logger = LoggerFactory.getLogger(RLALCMediaCaptureServiceIntegrationTest.class);
+
+    private IRLALCMediaCaptureService mediaCaptureService;
+
+    private long startTimeEpochSec;
+    private long durationSeconds;
+
+    @BeforeAll
+    static void setUpAll() {
+        // Adjust the baseDir so that the test can run outside Docker on our dev machines
+        if (PrtConfigHelper.isDevlocalNonDockerExecution()) {
+            System.setProperty("prt.rlalc.baseDir", "/Users/teevity/Dev/misc/@opt-prtlabs");    // Instead of /opt/prtlabs
+        }
+    }
+
+    @BeforeEach
+    public void setUp() {
+        // Calculate start time (10 seconds before now) and duration (25 seconds total)
+        startTimeEpochSec = Instant.now().getEpochSecond() - 10;
+        durationSeconds = 25; // 10 seconds before now + 15 seconds after now = 25 seconds total
+
+        logger.info("Setting up test with start time {} ({} seconds ago) and duration {} seconds",
+                startTimeEpochSec, Instant.now().getEpochSecond() - startTimeEpochSec, durationSeconds);
+
+        // Configure the Guice injection for the test
+        Injector injector = Guice.createInjector(new AbstractModule() {
+            @Override
+            protected void configure() {
+                bind(IRLALCMediaCaptureService.class).to(RLALCMediaCaptureServiceImpl.class);
+                bind(IMediaCapturePlanningLoader.class).toInstance(new StaticallyDefined_MediaCapturePlanningLoader(
+                    "France Inter",
+                    "http://direct.franceinter.fr/live/franceinter-midfi.mp3",
+                    startTimeEpochSec,
+                    durationSeconds,
+                    ZoneId.of("Europe/Paris")));
+                bind(IMediaRecorder.class).to(FFMpegRecorder.class);
+            }
+        });
+        mediaCaptureService = injector.getInstance(IRLALCMediaCaptureService.class);
+    }
+
+}

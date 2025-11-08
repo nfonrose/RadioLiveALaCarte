@@ -1,0 +1,70 @@
+import net.ltgt.gradle.errorprone.CheckSeverity
+
+plugins {
+    id 'java'
+    id 'net.ltgt.errorprone' version '4.3.0'    // Gradle plugin for the 'Google ErrorProne' tool
+}
+
+group = 'com.prtlabs.rlalc.common'
+version = '0.1-SNAPSHOT'
+
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(23)
+    }
+}
+
+// Use Google ErrorProne with a light set of rules (focus is on the 'typed Map' + 'record for IDs' usecase
+tasks.withType(JavaCompile).configureEach {
+    options.errorprone {
+        disableAllChecks.set(true)                                 // Disable all checks, then enable only specific ones
+        check("CollectionIncompatibleType", CheckSeverity.ERROR)   // Example: check("EqualsHashCode", CheckSeverity.WARN)
+    }
+}
+
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Google Guice for dependency injection
+    implementation 'com.google.inject:guice:7.0.0'
+
+    // Jakarta Inject API
+    implementation 'jakarta.inject:jakarta.inject-api:2.0.1'
+
+    // Needed to annotation the DTOs with annotations like @JsonCreator
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.16.0'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-joda:2.16.0'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.0'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.16.1'
+
+    // Logs (SLF4J, LogBack, SpringBoot like colors)
+    implementation 'org.slf4j:slf4j-api:2.0.17'
+    implementation 'ch.qos.logback:logback-classic:1.5.20'
+    implementation 'org.fusesource.jansi:jansi:2.4.1'                             // For cross-platform ANSI color support
+
+    // Lombok for reducing boilerplate code
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+    testCompileOnly 'org.projectlombok:lombok:1.18.30'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+    // Quartz for job scheduling
+    implementation 'org.quartz-scheduler:quartz:2.3.2'
+
+    // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+
+    // Google ErrorProne dependency
+    errorprone 'com.google.errorprone:error_prone_core:2.43.0'
+}
+
+test {
+    useJUnitPlatform()
+}
+

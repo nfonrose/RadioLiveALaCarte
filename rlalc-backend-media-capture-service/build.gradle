@@ -1,0 +1,245 @@
+import net.ltgt.gradle.errorprone.CheckSeverity
+
+plugins {
+    id 'java'
+    id 'application'
+    id 'net.ltgt.errorprone' version '4.3.0'    // Gradle plugin for the 'Google ErrorProne' tool
+}
+
+group = 'com.prtlabs.rlalc.backend.services.mediacapture'
+version = '0.1-SNAPSHOT'
+
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(23)
+    }
+}
+
+// Use Google ErrorProne with a light set of rules (focus is on the 'typed Map' + 'record for IDs' usecase
+tasks.withType(JavaCompile).configureEach {
+    options.errorprone {
+        disableAllChecks.set(true)                                 // Disable all checks, then enable only specific ones
+        check("CollectionIncompatibleType", CheckSeverity.ERROR)   // Example: check("EqualsHashCode", CheckSeverity.WARN)
+    }
+}
+
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+
+    implementation project(":rlalc-backend-common")
+
+    // Google Guice for dependency injection
+    implementation 'com.google.inject:guice:7.0.0'
+
+    // Jakarta Inject API
+    implementation 'jakarta.inject:jakarta.inject-api:2.0.1'
+
+    // Logs (SLF4J, LogBack, SpringBoot like colors)
+    implementation 'org.slf4j:slf4j-api:2.0.17'
+    implementation 'ch.qos.logback:logback-classic:1.5.20'
+    implementation 'org.fusesource.jansi:jansi:2.4.1'                             // For cross-platform ANSI color support
+
+    // Jackson for JSON processing
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
+    implementation 'com.fasterxml.jackson.core:jackson-annotations:2.16.1'
+    implementation 'com.fasterxml.jackson.core:jackson-core:2.16.1'
+
+    // Common Java libraries
+    implementation "org.apache.commons:commons-lang3:3.19.0"
+
+    // Quartz for job scheduling
+    implementation 'org.quartz-scheduler:quartz:2.3.2'
+
+    // Lombok for reducing boilerplate code
+    compileOnly 'org.projectlombok:lombok:1.18.30'
+    annotationProcessor 'org.projectlombok:lombok:1.18.30'
+    testCompileOnly 'org.projectlombok:lombok:1.18.30'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+    // Testing
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.2'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.2'
+
+    // Google ErrorProne dependency
+    errorprone 'com.google.errorprone:error_prone_core:2.43.0'
+}
+
+
+application {
+    mainClass = 'com.prtlabs.rlalc.backend.mediacapture.entrypoint.EntryPoint'
+
+    // Build the "Java System properties" list dynamically
+    applicationDefaultJvmArgs = [
+        '-Djansi.passthrough=true'                             // To let ANSI colors passthrough when using `gradle run`
+    ]
+    if (project.hasProperty('prt.rlalc.baseDir')) {               applicationDefaultJvmArgs << "-Dprt.rlalc.baseDir=${project.property('prt.rlalc.baseDir')}" }
+    if (project.hasProperty('prt.rlalc.confFileAbsolutePath')) {  applicationDefaultJvmArgs << "-Dprt.rlalc.confFileAbsolutePath=${project.property('prt.rlalc.confFileAbsolutePath')}" }
+}
+
+// Create a fatJar (without shadow, so not optimized) which can be used with 'java -jar ./build/libs/rlalc-backend-media-capture-service-1.0-SNAPSHOT.jar'
+jar {
+    manifest {
+        attributes 'Main-Class': application.mainClass
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+test {
+    useJUnitPlatform()
+}
+
+wrapper {
+    gradleVersion = '8.10'
+}
+
+// Docker tasks
+task prtBuildDockerImage(type: Exec) {
+    dependsOn jar
+    group = 'docker'
+    description = 'Builds a multi-architecture Docker image and tags it with version and latest'
+
+    def imageName = "prt-rlalc-backend-media-capture-service"
+    def imageVersion = "${version}"
+
+    // Buildx command: multi-platform
+    commandLine 'docker', 'buildx', 'build',
+            '--platform', 'linux/amd64,linux/arm64',
+            '-t', "${imageName}:${imageVersion}",
+            '-t', "${imageName}:latest",
+            '--load', // Need with buildx so that Docker loads the image locally (for testing)
+            '.'
+
+    doFirst {
+        println "Building multi-arch Docker image [${imageName}:${imageVersion}]"
+        println " -> Platforms: linux/amd64, linux/arm64"
+        println " -> Equivalent CLI command:"
+        println "      docker buildx build --platform linux/amd64,linux/arm64 -t ${imageName}:${imageVersion} -t ${imageName}:latest --load .\n"
+    }
+}
+
+task prtRunViaDocker(type: Exec) {
+    group = 'docker'
+    description = 'Runs the application using Docker'
+
+    commandLine 'docker', 'run', '-it', '--rm', '-p', '8080:8080',
+                '-v', "${projectDir}/logs:/opt/prtlabs/radiolivealacarte/logs",
+                '-v', "${projectDir}/media:/opt/prtlabs/radiolivealacarte/media",
+                '-v', "${projectDir}/deploy/conf.examples/rlalc-backend-media-capture-service-example001.conf:/opt/prtlabs/radiolivealacarte/conf/rlalc-backend-media-capture-service.conf",
+                "prt-rlalc-backend-media-capture-service:latest"
+
+    doFirst {
+        println "Running Docker container [prt-rlalc-backend-media-capture-service:latest]"
+        println " -> Equivalent CLI command:"
+        println "      docker run -it --rm  \\"
+        println "          -v ${projectDir}/logs:/opt/prtlabs/radiolivealacarte/logs \\"
+        println "          -v ${projectDir}/media:/opt/prtlabs/radiolivealacarte/media \\"
+        println "          -v ${projectDir}/deploy/conf.examples/rlalc-backend-media-capture-service-example001.conf:/opt/prtlabs/radiolivealacarte/conf/rlalc-backend-media-capture-service.conf \\"
+        println "          prt-rlalc-backend-media-capture-service:latest \n"
+    }
+}
+
+
+task prtRunViaDockerCompose(type: Exec) {
+    group = 'docker'
+    description = 'Runs the application using Docker'
+
+    commandLine "docker", "compose",
+            "-f", "./deploy/docker/docker-composition_rlalc-backend-media-capture-service.yml",
+            "--env-file", "./deploy/docker/parameters.env",
+            "up"
+
+    doFirst {
+        println "Running Docker composition [docker-composition_rlalc-backend-media-capture-service.yml]"
+        println " -> Equivalent CLI command:"
+        println "      docker compose -f ./deploy/docker/docker-composition_rlalc-backend-media-capture-service.yml --env-file ./deploy/docker/parameters.env up \n"
+    }
+}
+
+task prtPushDockerImageToGithubContainerRepo(type: Exec) {
+    dependsOn prtBuildDockerImage
+    group = 'docker'
+    description = 'Pushes the Docker image to GitHub Container Registry with version and latest tags'
+
+    // Define GitHub Container Registry URL and image name
+    def githubRegistry = "ghcr.io"
+    def githubUser = "nfonrose"
+    def imageName = "prt-rlalc-backend-media-capture-service"
+    def imageTag = "${version}"
+    def fullImageName = "${githubRegistry}/${githubUser}/${imageName}:${imageTag}"
+    def fullImageNameLatest = "${githubRegistry}/${githubUser}/${imageName}:latest"
+
+    // Tag the local image with the GitHub Container Registry URL
+    commandLine 'docker', 'tag', 
+                "${imageName}:${imageTag}", 
+                "${fullImageName}"
+
+    doFirst {
+        println "Pushing (and tagging with version and latest) Docker image to GitHub Container Registry [${imageName}:${imageTag}] as [${fullImageName}]"
+        println " -> Equivalent CLI command:"
+        println "      docker tag ${imageName}:${imageTag} ${fullImageName}"
+        println "      docker tag ${imageName}:latest ${fullImageNameLatest}"
+        println "      docker push ${fullImageName}"
+        println "      docker push ${fullImageNameLatest}\n"
+    }
+
+    // After tagging, push the image to GitHub Container Registry
+    doLast {
+        exec {
+            commandLine 'docker', 'push', "${fullImageName}"
+        }
+
+        // Tag and push the latest version
+        exec {
+            commandLine 'docker', 'tag', 
+                        "${imageName}:latest", 
+                        "${fullImageNameLatest}"
+        }
+
+        exec {
+            commandLine 'docker', 'push', "${fullImageNameLatest}"
+        }
+    }
+}
+
+
+task prtHelp {
+    group = 'Help'
+    description = 'Shows how to run the application with project (-P) properties for RadioLiveALaCarte.'
+
+    doLast {
+        println '''
+    ────────────────────────────────────────────────────────────
+     RadioLiveALaCarte - PRT Helper
+    ────────────────────────────────────────────────────────────
+
+
+
+    Usage:
+      gradle run -Pprt.rlalc.baseDir=<BASEDIR>. \\
+                 -Pprt.rlalc.confFileAbsolutePath=<PATH_ABSOLUTE_OR_RELATIVE_TO_CONF_FILE>
+
+    Description of properties:
+      -Pprt.rlalc.baseDir                → Base directory of your local installation.
+      -Pprt.rlalc.confFileAbsolutePath   → Absolute path to the configuration file.
+
+    Examples:
+      gradle run -Pprt.rlalc.baseDir=. \\
+                 -Pprt.rlalc.confFileAbsolutePath=./deploy/conf.examples/rlalc-backend-media-capture-service-example001.conf
+
+      gradle run -Pprt.rlalc.baseDir=/Users/teevity/Dev/misc/@opt-prtlabs \\
+                 -Pprt.rlalc.confFileAbsolutePath=/Users/teevity/Dev/misc/@opt-prtlabs/radiolivealacarte/conf/rlalc-backend-media-capture-service-example001.conf
+
+    You can also run without any -P options, in which case defaults will apply.
+
+    ────────────────────────────────────────────────────────────
+        '''
+    }
+}

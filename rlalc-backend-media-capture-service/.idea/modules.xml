@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/rlalc-backend-media-capture-service.iml" filepath="$PROJECT_DIR$/.idea/modules/rlalc-backend-media-capture-service.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/rlalc-backend-media-capture-service.main.iml" filepath="$PROJECT_DIR$/.idea/modules/rlalc-backend-media-capture-service.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-456785917/rlalc-backend-media-capture-service.rlalc-backend-common.iml" filepath="$PROJECT_DIR$/.idea/modules/-456785917/rlalc-backend-media-capture-service.rlalc-backend-common.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-456785917/rlalc-backend-media-capture-service.rlalc-backend-common.main.iml" filepath="$PROJECT_DIR$/.idea/modules/-456785917/rlalc-backend-media-capture-service.rlalc-backend-common.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/-456785917/rlalc-backend-media-capture-service.rlalc-backend-common.test.iml" filepath="$PROJECT_DIR$/.idea/modules/-456785917/rlalc-backend-media-capture-service.rlalc-backend-common.test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/rlalc-backend-media-capture-service.test.iml" filepath="$PROJECT_DIR$/.idea/modules/rlalc-backend-media-capture-service.test.iml" />
+    </modules>
+  </component>
+</project>
