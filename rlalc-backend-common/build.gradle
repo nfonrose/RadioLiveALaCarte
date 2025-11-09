@@ -35,6 +35,9 @@ dependencies {
     // Jakarta Inject API
     implementation 'jakarta.inject:jakarta.inject-api:2.0.1'
 
+    // Apache Commons
+    implementation 'commons-io:commons-io:2.11.0'
+
     // Needed to annotation the DTOs with annotations like @JsonCreator
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.16.0'
@@ -45,6 +48,7 @@ dependencies {
     // Logs (SLF4J, LogBack, SpringBoot like colors)
     implementation 'org.slf4j:slf4j-api:2.0.17'
     implementation 'ch.qos.logback:logback-classic:1.5.20'
+    implementation 'org.slf4j:jul-to-slf4j:2.0.16'                                // To redirect JUL logs (Tomcat embedded for instance) to SLF4J
     implementation 'org.fusesource.jansi:jansi:2.4.1'                             // For cross-platform ANSI color support
 
     // Lombok for reducing boilerplate code
@@ -52,6 +56,27 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.30'
     testCompileOnly 'org.projectlombok:lombok:1.18.30'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.30'
+
+    // Jersey
+    //   - BOM
+    implementation platform('org.glassfish.jersey:jersey-bom:3.1.8')
+    //   - Itself
+    implementation 'org.glassfish.jersey.core:jersey-server'
+    //   - Jersey/Servlet integration (Jersery Servlet)
+    implementation 'org.glassfish.jersey.containers:jersey-container-servlet'
+    //   - Injection
+    implementation 'org.glassfish.jersey.inject:jersey-hk2' // Needed to avoid "InjectionManagerFactory not found."
+    //   - Jersey XML serialization with the JAXB runtime. Needed to avoid the following warnings:
+    //     - "JAX-B API not found . WADL feature is disabled)"
+    //     - "A class javax.activation.DataSource for a default provider MessageBodyWriter<javax.activation.DataSource> was not found. The provider is not available."
+    implementation 'org.glassfish.jaxb:jaxb-runtime:4.0.3'
+    implementation 'org.glassfish.jersey.media:jersey-media-json-jackson'
+
+    // Swagger (versions with support for 'jakarata.*' instead of 'javax.*')
+    //   - OpenAPI generation
+    implementation 'io.swagger.core.v3:swagger-core-jakarta:2.2.16'
+    implementation 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.16'
+    implementation 'io.swagger.core.v3:swagger-jaxrs2-servlet-initializer-jakarta:2.2.16'
 
     // Quartz for job scheduling
     implementation 'org.quartz-scheduler:quartz:2.3.2'

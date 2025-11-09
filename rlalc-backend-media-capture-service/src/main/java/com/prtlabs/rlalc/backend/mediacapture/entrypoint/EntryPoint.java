@@ -2,11 +2,12 @@ package com.prtlabs.rlalc.backend.mediacapture.entrypoint;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.prtlabs.rlalc.backend.mediacapture.entrypoint.embeddedrestserver.IEmbeddedRESTServerModule;
 import com.prtlabs.rlalc.backend.mediacapture.services.IRLALCMediaCaptureService;
+import com.prtlabs.utils.logging.PrtLoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Properties;
 
 /**
  * Entry point for the RLALC Media Capture Service.
@@ -18,7 +19,6 @@ public class EntryPoint {
     public static void main(String[] args) {
         try {
             logger.info("Starting RLALC Media Capture Service ...");
-            Properties props = System.getProperties();
 
             // Create Guice injector
             Injector injector = Guice.createInjector(new MediaCaptureServiceGuiceModule());
@@ -27,6 +27,11 @@ public class EntryPoint {
             IRLALCMediaCaptureService service = injector.getInstance(IRLALCMediaCaptureService.class);
             service.startMediaCapture();
             
+            // Start the EmbeddedRESTServerModule
+            PrtLoggingUtils.interceptJULLogsAndForwardToSLF4J();
+            IEmbeddedRESTServerModule managementModule = injector.getInstance(IEmbeddedRESTServerModule.class);
+            managementModule.start(9796, "RLALC Media Capture Server");
+
             logger.info(" -> RLALC Media Capture Service started successfully. On hold until killed");
         } catch (Exception e) {
             logger.error("  -> Error starting RLALC Media Capture Service", e);

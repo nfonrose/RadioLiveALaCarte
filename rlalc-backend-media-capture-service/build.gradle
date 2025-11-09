@@ -52,6 +52,31 @@ dependencies {
     // Common Java libraries
     implementation "org.apache.commons:commons-lang3:3.19.0"
 
+    // Tomcat (embedded)
+    implementation 'org.apache.tomcat.embed:tomcat-embed-core:10.1.13'
+
+    // Jersey
+    //   - BOM
+    implementation platform('org.glassfish.jersey:jersey-bom:3.1.8')
+    //   - Itself
+    implementation 'org.glassfish.jersey.core:jersey-server'
+    //   - Jersey/Servlet integration (Jersery Servlet)
+    implementation 'org.glassfish.jersey.containers:jersey-container-servlet'
+    //   - Injection
+    implementation 'org.glassfish.jersey.inject:jersey-hk2' // Needed to avoid "InjectionManagerFactory not found."
+    //   - Jersey XML serialization with the JAXB runtime. Needed to avoid the following warnings:
+    //     - "JAX-B API not found . WADL feature is disabled)"
+    //     - "A class javax.activation.DataSource for a default provider MessageBodyWriter<javax.activation.DataSource> was not found. The provider is not available."
+    implementation 'org.glassfish.jaxb:jaxb-runtime:4.0.3'
+    implementation 'org.glassfish.jersey.media:jersey-media-json-jackson'
+
+    // Swagger (versions with support for 'jakarata.*' instead of 'javax.*')
+    //   - OpenAPI generation
+    implementation 'io.swagger.core.v3:swagger-core-jakarta:2.2.16'
+    implementation 'io.swagger.core.v3:swagger-jaxrs2-jakarta:2.2.16'
+    implementation 'io.swagger.core.v3:swagger-jaxrs2-servlet-initializer-jakarta:2.2.16'
+
+
     // Quartz for job scheduling
     implementation 'org.quartz-scheduler:quartz:2.3.2'
 

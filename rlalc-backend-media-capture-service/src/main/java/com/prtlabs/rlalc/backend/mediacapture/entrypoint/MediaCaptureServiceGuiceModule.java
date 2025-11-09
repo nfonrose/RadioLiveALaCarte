@@ -1,6 +1,8 @@
 package com.prtlabs.rlalc.backend.mediacapture.entrypoint;
 
 import com.google.inject.AbstractModule;
+import com.prtlabs.rlalc.backend.mediacapture.entrypoint.embeddedrestserver.IEmbeddedRESTServerModule;
+import com.prtlabs.rlalc.backend.mediacapture.entrypoint.embeddedrestserver.embeddedtomcatwithjersey.TomcatJerseyEmbeddedRESTServerModule;
 import com.prtlabs.rlalc.backend.mediacapture.services.IRLALCMediaCaptureService;
 import com.prtlabs.rlalc.backend.mediacapture.services.RLALCMediaCaptureServiceImpl;
 import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.IMediaCapturePlanningLoader;
@@ -32,6 +34,8 @@ public class MediaCaptureServiceGuiceModule extends AbstractModule {
         bind(IRLALCMediaCaptureService.class).to(RLALCMediaCaptureServiceImpl.class);
         bind(IMediaCapturePlanningLoader.class).to(ConfigFileBased_MediaCapturePlanningLoader.class);
         bind(IMediaRecorder.class).to(FFMpegRecorder.class);
+        //  - Management of the MediaCaptureService
+        bind(IEmbeddedRESTServerModule.class).to(TomcatJerseyEmbeddedRESTServerModule.class);
     }
 
 }
