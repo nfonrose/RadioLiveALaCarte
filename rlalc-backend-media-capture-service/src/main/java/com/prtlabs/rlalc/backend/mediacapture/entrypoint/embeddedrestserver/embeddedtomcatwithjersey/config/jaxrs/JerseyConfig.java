@@ -1,5 +1,6 @@
 package com.prtlabs.rlalc.backend.mediacapture.entrypoint.embeddedrestserver.embeddedtomcatwithjersey.config.jaxrs;
 
+import com.prtlabs.rlalc.backend.mediacapture.services.management.service.RLALCMediaCaptureServiceManagementAPIServiceImpl;
 import com.prtlabs.utils.httplogging.logascurl.PrtServerSideLogAsCurljakartaJAXRSFilter;
 import org.glassfish.jersey.server.ResourceConfig;
 
@@ -21,6 +22,7 @@ public class JerseyConfig  extends ResourceConfig {
 
         //  - Register resources one by one
         //    - Teevity REST Resources
+        this.register(RLALCMediaCaptureServiceManagementAPIServiceImpl.class);
         //    - Register server-side logAsCurl filter
         this.register(PrtServerSideLogAsCurljakartaJAXRSFilter.class);
 
