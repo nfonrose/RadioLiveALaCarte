@@ -450,6 +450,10 @@ If the scheduler cannot be reached, return a PrtTechnicalRuntimeException with a
 ### ----------------------------
 In the getCurrentPlanning do not use `Response` as a return type. Use a proper DTO class that you put in the com.prtlabs.rlalc.backend.mediacapture.services.management.api package please
 
+### ----------------------------
+Also use a DTO for the scheduledJobs properties inside the CurrentPlanningDTO. Create a ScheduledJobsDTO inner class inside  CurrentPlanningDTO. I don't HashMap used when proper classes can be defined to store data because it leads to a poor OpenAPI description
+
+
 
 
 

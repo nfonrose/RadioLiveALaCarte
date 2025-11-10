@@ -103,7 +103,7 @@ public class RLALCMediaCaptureServiceManagementAPIServiceImpl implements IRLALCM
             List<ProgramDescriptorDTO> loadedPlanning = planning.getProgramsToCapture();
 
             // Get the scheduled jobs from the Quartz scheduler
-            List<Map<String, Object>> scheduledJobs = new ArrayList<>();
+            List<CurrentPlanningDTO.ScheduledJobDTO> scheduledJobs = new ArrayList<>();
 
             // Initialize the scheduler
             SchedulerFactory schedulerFactory = new StdSchedulerFactory();
@@ -118,11 +118,12 @@ public class RLALCMediaCaptureServiceManagementAPIServiceImpl implements IRLALCM
                     Trigger trigger = triggers.get(0);
                     Date nextFireTime = trigger.getNextFireTime();
 
-                    Map<String, Object> jobInfo = new HashMap<>();
-                    jobInfo.put("jobKey", jobKey.getName());
-                    jobInfo.put("jobGroup", jobKey.getGroup());
-                    jobInfo.put("nextFireTime", nextFireTime != null ? 
-                        new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(nextFireTime) : null);
+                    // Create a builder for the ScheduledJobDTO
+                    CurrentPlanningDTO.ScheduledJobDTO.ScheduledJobDTOBuilder jobBuilder = CurrentPlanningDTO.ScheduledJobDTO.builder()
+                        .jobKey(jobKey.getName())
+                        .jobGroup(jobKey.getGroup())
+                        .nextFireTime(nextFireTime != null ? 
+                            new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(nextFireTime) : null);
 
                     // Try to extract stream name from job data
                     JobDataMap jobDataMap = jobDetail.getJobDataMap();
@@ -130,17 +131,18 @@ public class RLALCMediaCaptureServiceManagementAPIServiceImpl implements IRLALCM
                         try {
                             ProgramDescriptorDTO programDescriptor = PrtJsonUtils.getFasterXmlObjectMapper()
                                 .readValue(jobDataMap.getString(MediaCaptureJob.KEY_PROGRAM_DESC_ASJSON), ProgramDescriptorDTO.class);
-                            jobInfo.put("streamName", programDescriptor.getTitle());
-                            jobInfo.put("streamURL", programDescriptor.getStreamURL());
-                            jobInfo.put("uuid", programDescriptor.getUuid() != null ? 
-                                programDescriptor.getUuid().toString() : null);
+                            jobBuilder
+                                .streamName(programDescriptor.getTitle())
+                                .streamURL(programDescriptor.getStreamURL())
+                                .uuid(programDescriptor.getUuid() != null ? 
+                                    programDescriptor.getUuid().toString() : null);
                         } catch (Exception e) {
                             // If we can't parse the program descriptor, just continue without this info
-                            jobInfo.put("streamName", "Unknown");
+                            jobBuilder.streamName("Unknown");
                         }
                     }
 
-                    scheduledJobs.add(jobInfo);
+                    scheduledJobs.add(jobBuilder.build());
                 }
             }
 
