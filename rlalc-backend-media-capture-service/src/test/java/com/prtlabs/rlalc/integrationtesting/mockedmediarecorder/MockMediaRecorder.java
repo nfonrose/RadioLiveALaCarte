@@ -1,7 +1,7 @@
 package com.prtlabs.rlalc.integrationtesting.mockedmediarecorder;
 
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
-import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.IMediaRecorder;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.recorders.IMediaRecorder;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import com.prtlabs.rlalc.domain.ProgramId;
 

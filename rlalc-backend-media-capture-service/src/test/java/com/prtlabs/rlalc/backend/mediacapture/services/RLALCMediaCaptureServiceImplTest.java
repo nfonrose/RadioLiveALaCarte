@@ -3,6 +3,8 @@ package com.prtlabs.rlalc.backend.mediacapture.services;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.prtlabs.rlalc.backend.mediacapture.entrypoint.MediaCaptureServiceGuiceModule;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.IRLALCMediaCaptureService;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.RLALCMediaCaptureServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

@@ -1,6 +1,6 @@
 package com.prtlabs.rlalc.backend.mediacapture.entrypoint.embeddedrestserver.embeddedtomcatwithjersey.config.jaxrs;
 
-import com.prtlabs.rlalc.backend.mediacapture.services.management.service.RLALCMediaCaptureServiceManagementAPIServiceImpl;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturemanagement.service.RLALCMediaCaptureServiceManagementAPIServiceImpl;
 import com.prtlabs.utils.httplogging.logascurl.PrtServerSideLogAsCurljakartaJAXRSFilter;
 import org.glassfish.jersey.server.ResourceConfig;
 

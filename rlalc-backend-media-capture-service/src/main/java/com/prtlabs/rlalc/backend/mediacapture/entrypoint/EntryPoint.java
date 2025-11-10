@@ -3,7 +3,7 @@ package com.prtlabs.rlalc.backend.mediacapture.entrypoint;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.prtlabs.rlalc.backend.mediacapture.entrypoint.embeddedrestserver.IEmbeddedRESTServerModule;
-import com.prtlabs.rlalc.backend.mediacapture.services.IRLALCMediaCaptureService;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.IRLALCMediaCaptureService;
 import com.prtlabs.utils.logging.PrtLoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

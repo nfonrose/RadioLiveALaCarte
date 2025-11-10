@@ -3,7 +3,7 @@ package com.prtlabs.rlalc.integrationtesting;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.prtlabs.rlalc.backend.mediacapture.services.IRLALCMediaCaptureService;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.IRLALCMediaCaptureService;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import com.prtlabs.rlalc.domain.ProgramId;
 import com.prtlabs.utils.config.PrtConfigHelper;
