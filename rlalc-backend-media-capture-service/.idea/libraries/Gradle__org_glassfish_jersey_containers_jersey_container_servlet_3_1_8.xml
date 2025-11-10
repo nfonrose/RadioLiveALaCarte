@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Gradle: org.glassfish.jersey.containers:jersey-container-servlet:3.1.8" type="java-imported" external-system-id="GRADLE">
+    <properties groupId="org.glassfish.jersey.containers" artifactId="jersey-container-servlet" version="3.1.8" baseVersion="3.1.8" />
+    <CLASSES>
+      <root url="jar://$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.glassfish.jersey.containers/jersey-container-servlet/3.1.8/f80af4a5feb6a063297f6944363524e7b9399205/jersey-container-servlet-3.1.8.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
