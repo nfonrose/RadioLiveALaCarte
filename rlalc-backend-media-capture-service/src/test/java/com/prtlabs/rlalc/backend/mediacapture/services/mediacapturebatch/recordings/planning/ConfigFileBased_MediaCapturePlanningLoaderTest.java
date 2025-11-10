@@ -1,8 +1,8 @@
 package com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.planning;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.prtlabs.rlalc.backend.mediacapture.entrypoint.MediaCaptureServiceGuiceModule;
+import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
+import com.prtlabs.rlalc.backend.mediacapture.entrypoint.MediaCaptureServiceHK2Module;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.planning.dto.MediaCapturePlanningDTO;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.planning.loaders.file.ConfigFileBased_MediaCapturePlanningLoader;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
@@ -25,8 +25,9 @@ public class ConfigFileBased_MediaCapturePlanningLoaderTest {
 
     @BeforeEach
     public void setUp() {
-        Injector injector = Guice.createInjector(new MediaCaptureServiceGuiceModule());
-        mediaCapturePlanningService = injector.getInstance(IMediaCapturePlanningLoader.class);
+        ServiceLocator serviceLocator = ServiceLocatorUtilities.createAndPopulateServiceLocator();
+        ServiceLocatorUtilities.bind(serviceLocator, new MediaCaptureServiceHK2Module());
+        mediaCapturePlanningService = serviceLocator.getService(IMediaCapturePlanningLoader.class);
     }
 
     @Test
@@ -35,7 +36,7 @@ public class ConfigFileBased_MediaCapturePlanningLoaderTest {
         assertEquals(mediaCapturePlanningService.getClass().getSimpleName(), ConfigFileBased_MediaCapturePlanningLoader.class.getSimpleName());
 
         // Load the configuration
-        // REMARK: As the test is not overriding the default Guice injector, this code will load the MediaCapturePlanning from a file
+        // REMARK: As the test is not overriding the default HK2 ServiceLocator, this code will load the MediaCapturePlanning from a file
         //         which is expected to be /Users/teevity/Dev/misc/@opt-prtlabs/radiolivealacarte/conf/rlalc-backend-media-capture-service-example001.conf
         //         if the 'prt.rlalc.baseDir' System property is set to '/Users/teevity/Dev/misc/@opt-prtlabs'
         MediaCapturePlanningDTO planning = mediaCapturePlanningService.loadMediaCapturePlanning();

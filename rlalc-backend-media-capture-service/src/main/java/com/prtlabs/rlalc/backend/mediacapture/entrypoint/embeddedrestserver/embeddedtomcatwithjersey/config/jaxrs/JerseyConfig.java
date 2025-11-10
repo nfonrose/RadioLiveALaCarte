@@ -1,12 +1,13 @@
 package com.prtlabs.rlalc.backend.mediacapture.entrypoint.embeddedrestserver.embeddedtomcatwithjersey.config.jaxrs;
 
+import com.prtlabs.rlalc.backend.mediacapture.entrypoint.MediaCaptureServiceHK2Module;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturemanagement.service.RLALCMediaCaptureServiceManagementAPIServiceImpl;
 import com.prtlabs.utils.httplogging.logascurl.PrtServerSideLogAsCurljakartaJAXRSFilter;
 import org.glassfish.jersey.server.ResourceConfig;
 
 
 public class JerseyConfig  extends ResourceConfig {
-    
+
     public JerseyConfig() {
 
         //
@@ -25,6 +26,9 @@ public class JerseyConfig  extends ResourceConfig {
         this.register(RLALCMediaCaptureServiceManagementAPIServiceImpl.class);
         //    - Register server-side logAsCurl filter
         this.register(PrtServerSideLogAsCurljakartaJAXRSFilter.class);
+
+        // Register HK2 binder for dependency injection
+        this.register(new MediaCaptureServiceHK2Module());
 
 /*
         //

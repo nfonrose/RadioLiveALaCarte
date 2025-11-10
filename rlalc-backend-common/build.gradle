@@ -29,8 +29,13 @@ repositories {
 }
 
 dependencies {
-    // Google Guice for dependency injection
-    implementation 'com.google.inject:guice:7.0.0'
+    // HK2 for dependency injection
+    implementation 'org.glassfish.hk2:hk2-api:3.0.5'
+    implementation 'org.glassfish.hk2:hk2-locator:3.0.5'
+    implementation 'org.glassfish.hk2:hk2-utils:3.0.5'
+
+    // Google Guava for utility classes
+    implementation 'com.google.guava:guava:33.5.0-jre'
 
     // Jakarta Inject API
     implementation 'jakarta.inject:jakarta.inject-api:2.0.1'
@@ -92,4 +97,3 @@ dependencies {
 test {
     useJUnitPlatform()
 }
-

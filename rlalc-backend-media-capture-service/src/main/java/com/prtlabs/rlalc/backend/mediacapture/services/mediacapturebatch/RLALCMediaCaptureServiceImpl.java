@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.scheduling.quartzjobs.MediaCapturePendingStateInitializationJob;
 import com.prtlabs.rlalc.domain.ProgramId;
-import com.prtlabs.utils.dependencyinjection.guice.quartz.PrtGuiceQuartzJobFactory;
+import com.prtlabs.utils.dependencyinjection.hk2.quartz.PrtHK2QuartzJobFactory;
 import com.prtlabs.utils.exceptions.PrtTechnicalException;
 import com.prtlabs.utils.exceptions.PrtTechnicalRuntimeException;
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
@@ -47,7 +47,7 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
 
     @Inject private IMediaRecorder mediaRecorder;
     @Inject private IMediaCapturePlanningLoader mediaCapturePlanningService;
-    @Inject private PrtGuiceQuartzJobFactory prtGuiceQuartzJobFactory;
+    @Inject private PrtHK2QuartzJobFactory prtHK2QuartzJobFactory;
 
 
     @Override
@@ -128,7 +128,7 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
             logger.info("Quartz scheduler initialization ...");
             SchedulerFactory schedulerFactory = new StdSchedulerFactory();
             Scheduler scheduler = schedulerFactory.getScheduler();
-            scheduler.setJobFactory(prtGuiceQuartzJobFactory);      // When Quartz Jobs are created (based on JobDetails), they are instantiated via our Guice aware factory
+            scheduler.setJobFactory(prtHK2QuartzJobFactory);      // When Quartz Jobs are created (based on JobDetails), they are instantiated via our HK2 aware factory
             scheduler.start();
 
             // Schedule a job for each Program to capture

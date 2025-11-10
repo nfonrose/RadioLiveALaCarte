@@ -1,7 +1,7 @@
 package com.prtlabs.rlalc.integrationtesting.mockedmediarecorder;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Injector;
+import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.IRLALCMediaCaptureService;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.RLALCMediaCaptureServiceImpl;
@@ -36,146 +36,146 @@ public class RLALCMediaCaptureServiceMockTest extends BaseRLALCMediaCaptureServi
     public void setUp() {
         // Initialize the mock time provider with current time
         mockTimeProvider = new MockTimeProviderService(Instant.now());
-        
+
         // Initialize the mock planning loader
         mockPlanningLoader = new MockMediaCapturePlanningLoader();
-        
+
         // Initialize the mock media recorder
         mockMediaRecorder = new MockMediaRecorder();
-        
-        // Configure the Guice injection for the test
-        Injector injector = createInjector(new AbstractModule() {
+
+        // Configure the HK2 injection for the test
+        ServiceLocator serviceLocator = createServiceLocator(new AbstractBinder() {
             @Override
             protected void configure() {
-                bind(IRLALCMediaCaptureService.class).to(RLALCMediaCaptureServiceImpl.class);
-                bind(IMediaCapturePlanningLoader.class).toInstance(mockPlanningLoader);
-                bind(IMediaRecorder.class).toInstance(mockMediaRecorder);
-                bind(IPrtTimeProviderService.class).toInstance(mockTimeProvider);
+                bind(RLALCMediaCaptureServiceImpl.class).to(IRLALCMediaCaptureService.class);
+                bind(mockPlanningLoader).to(IMediaCapturePlanningLoader.class);
+                bind(mockMediaRecorder).to(IMediaRecorder.class);
+                bind(mockTimeProvider).to(IPrtTimeProviderService.class);
             }
         });
-        
-        mediaCaptureService = injector.getInstance(IRLALCMediaCaptureService.class);
+
+        mediaCaptureService = serviceLocator.getService(IRLALCMediaCaptureService.class);
     }
-    
+
     @Test
     public void testStartMediaCapture_WithNoPrograms() {
         // Clear any existing programs
         mockPlanningLoader.clearPrograms();
-        
+
         // Start media capture
         assertDoesNotThrow(() -> mediaCaptureService.startMediaCapture());
-        
+
         // Verify no recordings were started
         assertTrue(mockMediaRecorder.getInitializedPrograms().isEmpty());
         assertTrue(mockMediaRecorder.getStartedPrograms().isEmpty());
     }
-    
+
     @Test
     public void testStartMediaCapture_WithFutureProgram() {
         // Clear any existing programs
         mockPlanningLoader.clearPrograms();
-        
+
         // Add a program that starts in the future
         long startTimeEpochSec = Instant.now().getEpochSecond() + 3600; // 1 hour in the future
         long durationSeconds = 1800; // 30 minutes
         mockPlanningLoader.addProgram("Test Program", TEST_STREAM_URL, startTimeEpochSec, durationSeconds, TEST_TIMEZONE);
-        
+
         // Start media capture
         assertDoesNotThrow(() -> mediaCaptureService.startMediaCapture());
-        
+
         // Verify no recordings were started (since the program is in the future)
         assertTrue(mockMediaRecorder.getInitializedPrograms().isEmpty());
         assertTrue(mockMediaRecorder.getStartedPrograms().isEmpty());
-        
+
         // Verify the program is scheduled
         List<ProgramId> scheduledPrograms = mediaCaptureService.getScheduledProgramIds();
         assertEquals(1, scheduledPrograms.size());
     }
-    
+
     @Test
     public void testStartMediaCapture_WithCurrentProgram() {
         // Clear any existing programs
         mockPlanningLoader.clearPrograms();
-        
+
         // Add a program that is currently running
         long startTimeEpochSec = Instant.now().getEpochSecond() - 300; // 5 minutes ago
         long durationSeconds = 1800; // 30 minutes
         mockPlanningLoader.addProgram("Test Program", TEST_STREAM_URL, startTimeEpochSec, durationSeconds, TEST_TIMEZONE);
-        
+
         // Start media capture
         assertDoesNotThrow(() -> mediaCaptureService.startMediaCapture());
-        
+
         // Verify the recording was initialized and started
         assertEquals(1, mockMediaRecorder.getInitializedPrograms().size());
         assertEquals(1, mockMediaRecorder.getStartedPrograms().size());
-        
+
         // Verify the program is scheduled
         List<ProgramId> scheduledPrograms = mediaCaptureService.getScheduledProgramIds();
         assertEquals(1, scheduledPrograms.size());
     }
-    
+
     @Test
     public void testStartMediaCapture_WithPastProgram() {
         // Clear any existing programs
         mockPlanningLoader.clearPrograms();
-        
+
         // Add a program that has already ended
         long startTimeEpochSec = Instant.now().getEpochSecond() - 7200; // 2 hours ago
         long durationSeconds = 1800; // 30 minutes
         mockPlanningLoader.addProgram("Test Program", TEST_STREAM_URL, startTimeEpochSec, durationSeconds, TEST_TIMEZONE);
-        
+
         // Start media capture
         assertDoesNotThrow(() -> mediaCaptureService.startMediaCapture());
-        
+
         // Verify no recordings were started (since the program has already ended)
         assertTrue(mockMediaRecorder.getInitializedPrograms().isEmpty());
         assertTrue(mockMediaRecorder.getStartedPrograms().isEmpty());
-        
+
         // Verify no programs are scheduled
         List<ProgramId> scheduledPrograms = mediaCaptureService.getScheduledProgramIds();
         assertTrue(scheduledPrograms.isEmpty());
     }
-    
+
     @Test
     public void testGetRecordingStatuses() {
         // Clear any existing programs
         mockPlanningLoader.clearPrograms();
-        
+
         // Add a program
         long startTimeEpochSec = Instant.now().getEpochSecond() - 300; // 5 minutes ago
         long durationSeconds = 1800; // 30 minutes
         mockPlanningLoader.addProgram("Test Program", TEST_STREAM_URL, startTimeEpochSec, durationSeconds, TEST_TIMEZONE);
-        
+
         // Start media capture
         assertDoesNotThrow(() -> mediaCaptureService.startMediaCapture());
-        
+
         // Set a recording status in the mock recorder
         ProgramId programId = mockMediaRecorder.getStartedPrograms().get(0);
         RecordingStatus status = new RecordingStatus(RecordingStatus.Status.ONGOING);
         mockMediaRecorder.setRecordingStatus(programId, status);
-        
+
         // Get recording statuses
         Map<ProgramId, RecordingStatus> statuses = mediaCaptureService.getRecordingStatusesForCurrentDay();
-        
+
         // Verify the status
         assertEquals(1, statuses.size());
         assertTrue(statuses.containsKey(programId));
         assertEquals(RecordingStatus.Status.ONGOING, statuses.get(programId).getStatus());
     }
-    
+
     @Test
     public void testGetRecordingChunks() {
         // Clear any existing programs
         mockPlanningLoader.clearPrograms();
-        
+
         // Add a program
         long startTimeEpochSec = Instant.now().getEpochSecond() - 300; // 5 minutes ago
         long durationSeconds = 1800; // 30 minutes
         mockPlanningLoader.addProgram("Test Program", TEST_STREAM_URL, startTimeEpochSec, durationSeconds, TEST_TIMEZONE);
-        
+
         // Start media capture
         assertDoesNotThrow(() -> mediaCaptureService.startMediaCapture());
-        
+
         // Set some chunk files in the mock recorder
         ProgramId programId = mockMediaRecorder.getStartedPrograms().get(0);
         List<File> chunkFiles = Arrays.asList(
@@ -183,10 +183,10 @@ public class RLALCMediaCaptureServiceMockTest extends BaseRLALCMediaCaptureServi
             new File("/tmp/chunk2.mp3")
         );
         mockMediaRecorder.setChunkFiles(programId, chunkFiles);
-        
+
         // Get recording chunks
         List<URI> chunks = mediaCaptureService.getRecordingChunks(programId, Instant.now());
-        
+
         // Verify the chunks
         assertEquals(2, chunks.size());
         assertEquals(new File("/tmp/chunk1.mp3").getPath(), chunks.get(0).getPath());

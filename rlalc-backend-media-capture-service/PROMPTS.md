@@ -458,3 +458,6 @@ Also use a DTO for the scheduledJobs properties inside the CurrentPlanningDTO. C
 
 
 ## -------------------------------------------------------------------------------------------------------------------
+
+### ----------------------------
+Replace Guice with HK2 for Jersey 3 compatibility.

@@ -1,8 +1,8 @@
 package com.prtlabs.rlalc.backend.mediacapture.services;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
+import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.IRLALCMediaCaptureService;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.RLALCMediaCaptureServiceImpl;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.planning.IMediaCapturePlanningLoader;
@@ -48,21 +48,24 @@ public class RLALCMediaCaptureServiceIntegrationTest {
         logger.info("Setting up test with start time {} ({} seconds ago) and duration {} seconds",
                 startTimeEpochSec, Instant.now().getEpochSecond() - startTimeEpochSec, durationSeconds);
 
-        // Configure the Guice injection for the test
-        Injector injector = Guice.createInjector(new AbstractModule() {
+        // Configure the HK2 injection for the test
+        StaticallyDefined_MediaCapturePlanningLoader planningLoader = new StaticallyDefined_MediaCapturePlanningLoader(
+            "France Inter",
+            "http://direct.franceinter.fr/live/franceinter-midfi.mp3",
+            startTimeEpochSec,
+            durationSeconds,
+            ZoneId.of("Europe/Paris"));
+
+        ServiceLocator serviceLocator = ServiceLocatorUtilities.createAndPopulateServiceLocator();
+        ServiceLocatorUtilities.bind(serviceLocator, new AbstractBinder() {
             @Override
             protected void configure() {
-                bind(IRLALCMediaCaptureService.class).to(RLALCMediaCaptureServiceImpl.class);
-                bind(IMediaCapturePlanningLoader.class).toInstance(new StaticallyDefined_MediaCapturePlanningLoader(
-                    "France Inter",
-                    "http://direct.franceinter.fr/live/franceinter-midfi.mp3",
-                    startTimeEpochSec,
-                    durationSeconds,
-                    ZoneId.of("Europe/Paris")));
-                bind(IMediaRecorder.class).to(FFMpegRecorder.class);
+                bind(RLALCMediaCaptureServiceImpl.class).to(IRLALCMediaCaptureService.class);
+                bind(planningLoader).to(IMediaCapturePlanningLoader.class);
+                bind(FFMpegRecorder.class).to(IMediaRecorder.class);
             }
         });
-        mediaCaptureService = injector.getInstance(IRLALCMediaCaptureService.class);
+        mediaCaptureService = serviceLocator.getService(IRLALCMediaCaptureService.class);
     }
 
 }
