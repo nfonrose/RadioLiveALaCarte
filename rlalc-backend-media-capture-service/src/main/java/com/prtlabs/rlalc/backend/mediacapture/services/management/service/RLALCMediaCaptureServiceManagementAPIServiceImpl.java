@@ -1,6 +1,7 @@
 package com.prtlabs.rlalc.backend.mediacapture.services.management.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.prtlabs.rlalc.backend.mediacapture.services.management.api.CurrentPlanningDTO;
 import com.prtlabs.rlalc.backend.mediacapture.services.management.api.IRLALCMediaCaptureServiceManagementAPIService;
 import com.prtlabs.rlalc.backend.mediacapture.services.quartzjobs.MediaCaptureJob;
 import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.IMediaCapturePlanningLoader;
@@ -13,7 +14,6 @@ import com.prtlabs.utils.json.PrtJsonUtils;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -89,14 +89,14 @@ public class RLALCMediaCaptureServiceManagementAPIServiceImpl implements IRLALCM
     @ApiResponse(
         responseCode = "200",
         description = "Successfully retrieved current planning and scheduled jobs",
-        content = @Content(mediaType = MediaType.APPLICATION_JSON)
+        content = @Content(mediaType = MediaType.APPLICATION_JSON, schema = @Schema(implementation = CurrentPlanningDTO.class))
     )
     @ApiResponse(
         responseCode = "500",
         description = "Technical error occurred while retrieving scheduler information"
     )
     @Override
-    public Response getCurrentPlanning() {
+    public CurrentPlanningDTO getCurrentPlanning() {
         try {
             // Get the loaded planning from the planning loader
             MediaCapturePlanningDTO planning = mediaCapturePlanningLoader.loadMediaCapturePlanning();
@@ -144,12 +144,11 @@ public class RLALCMediaCaptureServiceManagementAPIServiceImpl implements IRLALCM
                 }
             }
 
-            // Create the response object
-            Map<String, Object> responseData = new HashMap<>();
-            responseData.put("loadedPlanning", loadedPlanning);
-            responseData.put("scheduledJobs", scheduledJobs);
-
-            return Response.ok(responseData).build();
+            // Create and return the DTO
+            return CurrentPlanningDTO.builder()
+                .loadedPlanning(loadedPlanning)
+                .scheduledJobs(scheduledJobs)
+                .build();
 
         } catch (SchedulerException e) {
             throw new PrtTechnicalRuntimeException(

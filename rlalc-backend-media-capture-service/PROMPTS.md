@@ -446,3 +446,11 @@ Return a JSON object:
 Annotate properly with Swagger (@Operation, @ApiResponse).
 
 If the scheduler cannot be reached, return a PrtTechnicalRuntimeException with a meaningful message (it will be mapped by Jersey exception mechanism)
+
+### ----------------------------
+In the getCurrentPlanning do not use `Response` as a return type. Use a proper DTO class that you put in the com.prtlabs.rlalc.backend.mediacapture.services.management.api package please
+
+
+
+
+## -------------------------------------------------------------------------------------------------------------------
