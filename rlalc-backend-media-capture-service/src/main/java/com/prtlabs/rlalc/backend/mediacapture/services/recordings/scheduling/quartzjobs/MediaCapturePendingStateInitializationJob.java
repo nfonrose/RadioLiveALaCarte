@@ -1,4 +1,4 @@
-package com.prtlabs.rlalc.backend.mediacapture.services.quartzjobs;
+package com.prtlabs.rlalc.backend.mediacapture.services.recordings.scheduling.quartzjobs;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.IMediaRecorder;
@@ -11,8 +11,6 @@ import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashMap;
 
 
 public class MediaCapturePendingStateInitializationJob implements Job {

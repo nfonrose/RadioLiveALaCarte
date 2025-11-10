@@ -3,7 +3,7 @@ package com.prtlabs.rlalc.backend.mediacapture.services.management.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.prtlabs.rlalc.backend.mediacapture.services.management.api.CurrentPlanningDTO;
 import com.prtlabs.rlalc.backend.mediacapture.services.management.api.IRLALCMediaCaptureServiceManagementAPIService;
-import com.prtlabs.rlalc.backend.mediacapture.services.quartzjobs.MediaCaptureJob;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.scheduling.quartzjobs.MediaCaptureJob;
 import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.IMediaCapturePlanningLoader;
 import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.dto.MediaCapturePlanningDTO;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;

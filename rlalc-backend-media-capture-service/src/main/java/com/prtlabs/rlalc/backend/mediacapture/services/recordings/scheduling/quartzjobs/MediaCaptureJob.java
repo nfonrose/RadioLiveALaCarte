@@ -1,4 +1,4 @@
-package com.prtlabs.rlalc.backend.mediacapture.services.quartzjobs;
+package com.prtlabs.rlalc.backend.mediacapture.services.recordings.scheduling.quartzjobs;
 
 import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.IMediaRecorder;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
