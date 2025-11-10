@@ -392,3 +392,57 @@ The test recording should generate the exact same data as the normal recordings
 > 5. **Development environment**
 The interface of the API should go into `IRLALCMediaCaptureServiceManagementAPIService` and the implementation
 The Recording description is already implemented with `ProgramDescriptorDTO`.
+
+
+
+
+
+## -------------------------------------------------------------------------------------------------------------------
+
+### ----------------------------
+Request — Add API endpoint to expose current planning and scheduled jobs
+
+Goal:
+Add a GET /planning/current endpoint that returns:
+
+The planning currently loaded from the configuration file, and
+
+All Quartz jobs currently scheduled (including runtime or test one-shots).
+
+Junie request:
+
+Junie, please implement the following feature:
+
+Modify the interfaces:
+
+IRLALCMediaCaptureServiceManagementAPIService
+
+RLALCMediaCaptureServiceManagementAPIServiceImpl
+
+Add a REST endpoint:
+
+@GET
+@Path("/planning/current")
+@Produces(MediaType.APPLICATION_JSON)
+Response getCurrentPlanning();
+
+
+Inside the implementation, gather:
+
+The list of recordings from the current planning loader (IMediaCapturePlanningLoader).
+
+The currently scheduled Quartz jobs from the Quartz Scheduler (you can inject or obtain it from the service layer).
+
+Return a JSON object:
+
+{
+"loadedPlanning": [ ...ProgramDescriptorDTO... ],
+"scheduledJobs": [
+{ "jobKey": "...", "nextFireTime": "...", "streamName": "...", ... }
+]
+}
+
+
+Annotate properly with Swagger (@Operation, @ApiResponse).
+
+If the scheduler cannot be reached, return a PrtTechnicalRuntimeException with a meaningful message (it will be mapped by Jersey exception mechanism)

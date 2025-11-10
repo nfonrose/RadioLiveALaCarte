@@ -2,24 +2,38 @@ package com.prtlabs.rlalc.backend.mediacapture.services.management.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.prtlabs.rlalc.backend.mediacapture.services.management.api.IRLALCMediaCaptureServiceManagementAPIService;
+import com.prtlabs.rlalc.backend.mediacapture.services.quartzjobs.MediaCaptureJob;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.IMediaCapturePlanningLoader;
+import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.dto.MediaCapturePlanningDTO;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import com.prtlabs.rlalc.domain.ProgramId;
 import com.prtlabs.rlalc.exceptions.RLALCExceptionCodesEnum;
 import com.prtlabs.utils.exceptions.PrtTechnicalRuntimeException;
 import com.prtlabs.utils.json.PrtJsonUtils;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 
-import java.util.List;
-import java.util.UUID;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.quartz.*;
+import org.quartz.impl.StdSchedulerFactory;
+import org.quartz.impl.matchers.GroupMatcher;
 
 
 @Path("management")
 @Tag(name = "management")
 public class RLALCMediaCaptureServiceManagementAPIServiceImpl implements IRLALCMediaCaptureServiceManagementAPIService {
+
+    @Inject
+    private IMediaCapturePlanningLoader mediaCapturePlanningLoader;
 
     /**
      * Can be called with:
@@ -58,6 +72,91 @@ public class RLALCMediaCaptureServiceManagementAPIServiceImpl implements IRLALCM
             System.out.println(PrtJsonUtils.getFasterXmlObjectMapper().writeValueAsString(programDescriptorDTO));
         } catch (JsonProcessingException e) {
             throw new PrtTechnicalRuntimeException(RLALCExceptionCodesEnum.RLAC_010_CannotAddOnTheFlyOneShotTestRecording.name(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Can be called with:
+     *   curl -s http://localhost:9796/api/management/planning/current -H "Accept: application/json" | jq .
+     */
+    @GET
+    @Path("/planning/current")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Operation(
+        summary = "Get the current planning and scheduled jobs",
+        description = "Returns the current loaded planning and the currently scheduled Quartz jobs"
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "Successfully retrieved current planning and scheduled jobs",
+        content = @Content(mediaType = MediaType.APPLICATION_JSON)
+    )
+    @ApiResponse(
+        responseCode = "500",
+        description = "Technical error occurred while retrieving scheduler information"
+    )
+    @Override
+    public Response getCurrentPlanning() {
+        try {
+            // Get the loaded planning from the planning loader
+            MediaCapturePlanningDTO planning = mediaCapturePlanningLoader.loadMediaCapturePlanning();
+            List<ProgramDescriptorDTO> loadedPlanning = planning.getProgramsToCapture();
+
+            // Get the scheduled jobs from the Quartz scheduler
+            List<Map<String, Object>> scheduledJobs = new ArrayList<>();
+
+            // Initialize the scheduler
+            SchedulerFactory schedulerFactory = new StdSchedulerFactory();
+            Scheduler scheduler = schedulerFactory.getScheduler();
+
+            // Get all job keys
+            for (JobKey jobKey : scheduler.getJobKeys(GroupMatcher.anyGroup())) {
+                JobDetail jobDetail = scheduler.getJobDetail(jobKey);
+                List<? extends Trigger> triggers = scheduler.getTriggersOfJob(jobKey);
+
+                if (!triggers.isEmpty()) {
+                    Trigger trigger = triggers.get(0);
+                    Date nextFireTime = trigger.getNextFireTime();
+
+                    Map<String, Object> jobInfo = new HashMap<>();
+                    jobInfo.put("jobKey", jobKey.getName());
+                    jobInfo.put("jobGroup", jobKey.getGroup());
+                    jobInfo.put("nextFireTime", nextFireTime != null ? 
+                        new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'").format(nextFireTime) : null);
+
+                    // Try to extract stream name from job data
+                    JobDataMap jobDataMap = jobDetail.getJobDataMap();
+                    if (jobDataMap.containsKey(MediaCaptureJob.KEY_PROGRAM_DESC_ASJSON)) {
+                        try {
+                            ProgramDescriptorDTO programDescriptor = PrtJsonUtils.getFasterXmlObjectMapper()
+                                .readValue(jobDataMap.getString(MediaCaptureJob.KEY_PROGRAM_DESC_ASJSON), ProgramDescriptorDTO.class);
+                            jobInfo.put("streamName", programDescriptor.getTitle());
+                            jobInfo.put("streamURL", programDescriptor.getStreamURL());
+                            jobInfo.put("uuid", programDescriptor.getUuid() != null ? 
+                                programDescriptor.getUuid().toString() : null);
+                        } catch (Exception e) {
+                            // If we can't parse the program descriptor, just continue without this info
+                            jobInfo.put("streamName", "Unknown");
+                        }
+                    }
+
+                    scheduledJobs.add(jobInfo);
+                }
+            }
+
+            // Create the response object
+            Map<String, Object> responseData = new HashMap<>();
+            responseData.put("loadedPlanning", loadedPlanning);
+            responseData.put("scheduledJobs", scheduledJobs);
+
+            return Response.ok(responseData).build();
+
+        } catch (SchedulerException e) {
+            throw new PrtTechnicalRuntimeException(
+                RLALCExceptionCodesEnum.RLAC_001_FailedToScheduleMediaCapture.name(), 
+                "Failed to access Quartz scheduler: " + e.getMessage(), 
+                e
+            );
         }
     }
 
