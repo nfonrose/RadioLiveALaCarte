@@ -1,5 +1,6 @@
 package com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch;
 
+import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import com.prtlabs.rlalc.domain.ProgramId;
 import com.prtlabs.utils.exceptions.PrtTechnicalException;
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
@@ -26,4 +27,5 @@ public interface IRLALCMediaCaptureService {
     Map<ProgramId, RecordingStatus> getRecordingStatusesForCurrentDay();
     List<URI>                       getRecordingChunks(ProgramId programId, Instant day);
 
+    ProgramId addOneTimeMediaCapture(ProgramDescriptorDTO programDescriptor);
 }

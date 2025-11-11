@@ -1,8 +1,10 @@
 package com.prtlabs.rlalc.backend.mediacapture.services.mediacapturemanagement.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.base.Strings;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturemanagement.api.CurrentPlanningDTO;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturemanagement.api.IRLALCMediaCaptureServiceManagementAPIService;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.IRLALCMediaCaptureService;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.scheduling.quartzjobs.MediaCaptureJob;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.planning.IMediaCapturePlanningLoader;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.planning.dto.MediaCapturePlanningDTO;
@@ -16,6 +18,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.*;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -26,14 +29,24 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.quartz.*;
 import org.quartz.impl.StdSchedulerFactory;
 import org.quartz.impl.matchers.GroupMatcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 
 @Path("management")
 @Tag(name = "management")
 public class RLALCMediaCaptureServiceManagementAPIServiceImpl implements IRLALCMediaCaptureServiceManagementAPIService {
 
+    private static final Logger logger = LoggerFactory.getLogger(RLALCMediaCaptureServiceManagementAPIServiceImpl.class);
+
     @Inject
     private IMediaCapturePlanningLoader mediaCapturePlanningLoader;
+
+    @Inject
+    private IRLALCMediaCaptureService mediaCaptureService;
 
     /**
      * Can be called with:
@@ -54,24 +67,46 @@ public class RLALCMediaCaptureServiceManagementAPIServiceImpl implements IRLALCM
     /**
      * Add a test recording that will run 1 sec after the call for 15sec (unless another duration is specified, ie is >0 sec)
      * Can be called with:
-     *   curl -s http://localhost:9796/api/management/addOneShotTestRecording -X POST -H "Content-Type: application/json" -d '{"uuid":null,"title":"France Inter - Test recording","streamURL":null,"startTimeUTCEpochSec":0,"durationSeconds":0,"timeZone":null,"recorderSpecificParameters":null}'
+     *   curl -s http://localhost:9796/api/management/addOneShotTestRecording -X POST -H "Content-Type: application/json" -d '{"title":"France Inter - Test recording","streamURL":"http://direct.franceinter.fr/live/franceinter-midfi.mp3","timeZone":"Europe/Paris"}'
      */
     @POST
     @Path("/addOneShotTestRecording")
     @Consumes(MediaType.APPLICATION_JSON)
+    @Operation(
+        summary = "Add a one-shot test recording",
+        description = "Adds a test recording that will run 1 second after the call for 15 seconds (unless another duration is specified)"
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "Successfully scheduled the test recording"
+    )
+    @ApiResponse(
+        responseCode = "500",
+        description = "Technical error occurred while scheduling the test recording"
+    )
     @Override
     public void addOneShotTestRecording(ProgramDescriptorDTO programDescriptorDTO) {
-        // Assign a new UUID to the recording
-        String uuid = UUID.randomUUID().toString();
-        programDescriptorDTO = programDescriptorDTO.toBuilder()
-            .uuid(new ProgramId(uuid))
-            .durationSeconds( ((programDescriptorDTO.getDurationSeconds()>0) ? programDescriptorDTO.getDurationSeconds() : 15) )
-            .build();
-        // Dump the content of the updated programDescriptorDTO to stdout
         try {
-            System.out.println(PrtJsonUtils.getFasterXmlObjectMapper().writeValueAsString(programDescriptorDTO));
+            // Preconditions
+            checkArgument(!Strings.isNullOrEmpty(programDescriptorDTO.getTitle()), "The title must be defined");
+            checkNotNull(programDescriptorDTO.getTimeZone(), "The timeZone must be defined for testRecording.title=[%s]", programDescriptorDTO.getTitle());
+
+            // Build the updated program descriptor
+            String uuid = UUID.randomUUID().toString();
+            long startTimeEpochSec = Instant.now().plusSeconds(1).getEpochSecond();    // Set start time to 1 second from now
+            programDescriptorDTO = programDescriptorDTO.toBuilder()
+                .uuid(new ProgramId(uuid))
+                .startTimeUTCEpochSec(startTimeEpochSec)
+                .durationSeconds(programDescriptorDTO.getDurationSeconds() > 0 ? programDescriptorDTO.getDurationSeconds() : 15)
+                .build();
+
+            // Schedule the one-time media capture
+            logger.info("Adding one-shot test recording [{}]", PrtJsonUtils.getFasterXmlObjectMapper().writeValueAsString(programDescriptorDTO));
+            ProgramId programId = mediaCaptureService.addOneTimeMediaCapture(programDescriptorDTO);
+            logger.info("  -> Successfully scheduled one-shot test recording with ID [{}]", programId);
         } catch (JsonProcessingException e) {
-            throw new PrtTechnicalRuntimeException(RLALCExceptionCodesEnum.RLAC_010_CannotAddOnTheFlyOneShotTestRecording.name(), e.getMessage(), e);
+            throw new PrtTechnicalRuntimeException(RLALCExceptionCodesEnum.RLAC_010_CannotAddOnTheFlyOneShotTestRecording.name(), "Failed to process program descriptor with message=["+e.getMessage()+"]", e);
+        } catch (Exception e) {throw new PrtTechnicalRuntimeException(RLALCExceptionCodesEnum.RLAC_010_CannotAddOnTheFlyOneShotTestRecording.name(), "Failed to add one-shot test recording: "+e.getMessage()+"]", e);
         }
     }
 

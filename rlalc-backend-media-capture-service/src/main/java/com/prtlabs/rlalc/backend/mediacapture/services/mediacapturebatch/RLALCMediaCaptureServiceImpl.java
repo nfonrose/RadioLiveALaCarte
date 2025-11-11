@@ -105,6 +105,78 @@ public class RLALCMediaCaptureServiceImpl implements IRLALCMediaCaptureService {
         return result;
     }
 
+    @Override
+    public ProgramId addOneTimeMediaCapture(ProgramDescriptorDTO programDescriptor) {
+        try {
+            logger.info("Adding one-time media capture for program=[{}] with UUID [{}] at [{}] for [{}] seconds", 
+                programDescriptor.getTitle(), programDescriptor.getUuid(), programDescriptor.getStartTimeUTCEpochSec(), 
+                programDescriptor.getDurationSeconds());
+
+            // Initialize the scheduler
+            SchedulerFactory schedulerFactory = new StdSchedulerFactory();
+            Scheduler scheduler = schedulerFactory.getScheduler();
+            scheduler.setJobFactory(prtHK2QuartzJobFactory);
+
+            // Parse start time and duration
+            long startTimeEpochSec = programDescriptor.getStartTimeUTCEpochSec();
+            long durationSeconds = programDescriptor.getDurationSeconds();
+            Date startDate = Date.from(Instant.ofEpochSecond(startTimeEpochSec));
+            Date endDate = Date.from(Instant.ofEpochSecond(startTimeEpochSec + durationSeconds));
+
+            // Create the Quartz Start Job and its associate trigger
+            String startRecordingJobId = "capture-" + programDescriptor.getUuid();
+            String startRecordingTriggerId = "trigger-" + programDescriptor.getUuid();
+            JobDataMap jobDataMap = new JobDataMap();
+            jobDataMap.put(MediaCaptureJob.KEY_PROGRAM_DESC_ASJSON, mapper.writeValueAsString(programDescriptor));
+            JobDetail jobDetail = JobBuilder.newJob(MediaCaptureJob.class)
+                .withIdentity(startRecordingJobId)
+                .usingJobData(jobDataMap)
+                .build();
+
+            // Create trigger for start job
+            Trigger startTrigger = TriggerBuilder.newTrigger()
+                .withIdentity(startRecordingTriggerId)
+                .startAt(startDate)
+                .build();
+
+            // Schedule the start job
+            scheduler.scheduleJob(jobDetail, startTrigger);
+
+            // Create the Quartz Stop Job and its associate trigger
+            String stopRecordingJobId = "stop-" + programDescriptor.getUuid();
+            String stopRecordingTriggerId = "stop-trigger-" + programDescriptor.getUuid();
+            JobDataMap stopJobDataMap = new JobDataMap();
+            stopJobDataMap.put(MediaCaptureJob.KEY_PROGRAM_DESC_ASJSON, mapper.writeValueAsString(programDescriptor));
+            JobDetail stopJobDetail = JobBuilder.newJob(MediaCaptureStopJob.class)
+                .withIdentity(stopRecordingJobId)
+                .usingJobData(stopJobDataMap)
+                .build();
+
+            // Create trigger for stop job
+            Trigger stopTrigger = TriggerBuilder.newTrigger()
+                .withIdentity(stopRecordingTriggerId)
+                .startAt(endDate)
+                .build();
+
+            // Schedule the stop job
+            scheduler.scheduleJob(stopJobDetail, stopTrigger);
+
+            // Initialize the recording into a Pending state
+            mediaRecorder.initBeforeRecording(programDescriptor);
+
+            logger.info("    -> One-time media capture scheduled for stream [{}] at [{}] for a duration of [{}]secs", 
+                programDescriptor.getTitle(), startDate, durationSeconds);
+
+            return programDescriptor.getUuid();
+        } catch (Exception e) {
+            logger.error("Failed to schedule one-time media capture: {}", e.getMessage(), e);
+            throw new PrtTechnicalRuntimeException(RLALCExceptionCodesEnum.RLAC_001_FailedToScheduleMediaCapture.name(), 
+                    "Failed to schedule one-time media capture: " + e.getMessage(), e);
+        }
+    }
+
+
+
 
 
 
