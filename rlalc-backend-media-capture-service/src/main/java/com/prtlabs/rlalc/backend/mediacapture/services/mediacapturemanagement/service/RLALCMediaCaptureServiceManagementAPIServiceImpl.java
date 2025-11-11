@@ -67,7 +67,7 @@ public class RLALCMediaCaptureServiceManagementAPIServiceImpl implements IRLALCM
     /**
      * Add a test recording that will run 1 sec after the call for 15sec (unless another duration is specified, ie is >0 sec)
      * Can be called with:
-     *   curl -s http://localhost:9796/api/management/addOneShotTestRecording -X POST -H "Content-Type: application/json" -d '{"title":"France Inter - Test recording","streamURL":"http://direct.franceinter.fr/live/franceinter-midfi.mp3","timeZone":"Europe/Paris"}'
+     *   curl -s http://localhost:9796/api/management/addOneShotTestRecording -X POST -H "Content-Type: application/json" -d '{"title":"France Inter - Test recording","streamURL":"http://direct.franceinter.fr/live/franceinter-midfi.mp3","timeZone":"Europe/Paris", "recorderSpecificParameters":{}}'
      */
     @POST
     @Path("/addOneShotTestRecording")
@@ -90,6 +90,7 @@ public class RLALCMediaCaptureServiceManagementAPIServiceImpl implements IRLALCM
             // Preconditions
             checkArgument(!Strings.isNullOrEmpty(programDescriptorDTO.getTitle()), "The title must be defined");
             checkNotNull(programDescriptorDTO.getTimeZone(), "The timeZone must be defined for testRecording.title=[%s]", programDescriptorDTO.getTitle());
+            checkNotNull(programDescriptorDTO.getRecorderSpecificParameters(), "The recorderSpecificParameters can't be null (it should be an empty map instead) for testRecording.title=[%s]", programDescriptorDTO.getTitle());
 
             // Build the updated program descriptor
             String uuid = UUID.randomUUID().toString();
