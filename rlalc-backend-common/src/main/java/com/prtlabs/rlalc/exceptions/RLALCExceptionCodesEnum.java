@@ -11,6 +11,8 @@ public enum RLALCExceptionCodesEnum {
     RLAC_006_FailedToStartRecordingForProgram,
     RLAC_007_FailedToPrepareForRecordingOfProgram,
     RLAC_008_FailedToStopRecordingProcessForUnkownReason,
+    RLAC_009_CannotStartEmbeddedHttpRestServer,
+    RLAC_010_CannotAddOnTheFlyOneShotTestRecording,
     ;
 
 }

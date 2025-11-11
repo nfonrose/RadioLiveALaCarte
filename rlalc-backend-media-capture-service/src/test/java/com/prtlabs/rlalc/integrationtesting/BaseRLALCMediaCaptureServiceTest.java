@@ -1,9 +1,9 @@
 package com.prtlabs.rlalc.integrationtesting;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.prtlabs.rlalc.backend.mediacapture.services.IRLALCMediaCaptureService;
+import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.IRLALCMediaCaptureService;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import com.prtlabs.rlalc.domain.ProgramId;
 import com.prtlabs.utils.config.PrtConfigHelper;
@@ -35,13 +35,15 @@ public abstract class BaseRLALCMediaCaptureServiceTest {
     }
 
     /**
-     * Creates a Guice injector with the specified module.
+     * Creates an HK2 ServiceLocator with the specified binder.
      * 
-     * @param module The Guice module to use
-     * @return The configured Guice injector
+     * @param binder The HK2 binder to use
+     * @return The configured HK2 ServiceLocator
      */
-    protected Injector createInjector(AbstractModule module) {
-        return Guice.createInjector(module);
+    protected ServiceLocator createServiceLocator(AbstractBinder binder) {
+        ServiceLocator serviceLocator = ServiceLocatorUtilities.createAndPopulateServiceLocator();
+        ServiceLocatorUtilities.bind(serviceLocator, binder);
+        return serviceLocator;
     }
 
     /**

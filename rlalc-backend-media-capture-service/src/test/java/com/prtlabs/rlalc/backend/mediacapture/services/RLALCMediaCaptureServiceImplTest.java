@@ -1,8 +1,10 @@
 package com.prtlabs.rlalc.backend.mediacapture.services;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.prtlabs.rlalc.backend.mediacapture.entrypoint.MediaCaptureServiceGuiceModule;
+import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
+import com.prtlabs.rlalc.backend.mediacapture.entrypoint.MediaCaptureServiceHK2Module;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.IRLALCMediaCaptureService;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.RLALCMediaCaptureServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -12,13 +14,14 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
  * Test for {@link RLALCMediaCaptureServiceImpl}.
  */
 public class RLALCMediaCaptureServiceImplTest {
-    
+
     private IRLALCMediaCaptureService service;
-    
+
     @BeforeEach
     public void setUp() {
-        Injector injector = Guice.createInjector(new MediaCaptureServiceGuiceModule());
-        service = injector.getInstance(IRLALCMediaCaptureService.class);
+        ServiceLocator serviceLocator = ServiceLocatorUtilities.createAndPopulateServiceLocator();
+        ServiceLocatorUtilities.bind(serviceLocator, new MediaCaptureServiceHK2Module());
+        service = serviceLocator.getService(IRLALCMediaCaptureService.class);
     }
 
     @Test

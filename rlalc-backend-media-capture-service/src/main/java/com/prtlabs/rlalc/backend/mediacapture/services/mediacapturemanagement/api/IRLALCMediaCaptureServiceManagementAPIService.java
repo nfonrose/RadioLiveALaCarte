@@ -1,0 +1,13 @@
+package com.prtlabs.rlalc.backend.mediacapture.services.mediacapturemanagement.api;
+
+import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
+import java.util.List;
+
+
+public interface IRLALCMediaCaptureServiceManagementAPIService {
+
+    List<ProgramDescriptorDTO> getPlannings();
+    void addOneShotTestRecording(ProgramDescriptorDTO programDescriptorDTO);
+    CurrentPlanningDTO getCurrentPlanning();
+
+}

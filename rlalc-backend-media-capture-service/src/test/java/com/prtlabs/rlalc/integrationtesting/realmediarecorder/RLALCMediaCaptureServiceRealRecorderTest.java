@@ -1,15 +1,15 @@
 package com.prtlabs.rlalc.integrationtesting.realmediarecorder;
 
-import com.google.inject.AbstractModule;
-import com.google.inject.Injector;
+import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import com.prtlabs.rlalc.backend.mediacapture.domain.RecordingStatus;
-import com.prtlabs.rlalc.backend.mediacapture.services.IRLALCMediaCaptureService;
-import com.prtlabs.rlalc.backend.mediacapture.services.RLALCMediaCaptureServiceImpl;
-import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.IMediaCapturePlanningLoader;
-import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.IMediaRecorder;
-import com.prtlabs.rlalc.backend.mediacapture.services.recordings.recorders.ffmpeg.FFMpegRecorder;
-import com.prtlabs.rlalc.backend.mediacapture.services.recordings.statemanagement.IRecordingStateManagementService;
-import com.prtlabs.rlalc.backend.mediacapture.services.recordings.statemanagement.manifests.ManifestFileBasedRecordingStateManagementService;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.IRLALCMediaCaptureService;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.RLALCMediaCaptureServiceImpl;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.planning.IMediaCapturePlanningLoader;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.recorders.IMediaRecorder;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.recorders.ffmpeg.FFMpegRecorder;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.statemanagement.IRecordingStateManagementService;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.statemanagement.manifests.ManifestFileBasedRecordingStateManagementService;
 import com.prtlabs.rlalc.domain.ProgramId;
 import com.prtlabs.rlalc.integrationtesting.BaseRLALCMediaCaptureServiceTest;
 import com.prtlabs.rlalc.integrationtesting.MockMediaCapturePlanningLoader;
@@ -43,32 +43,32 @@ public class RLALCMediaCaptureServiceRealRecorderTest extends BaseRLALCMediaCapt
     private static final ZoneId TEST_TIMEZONE = ZoneId.of("Europe/Paris");
     private static final int TEST_DURATION_SECONDS = 20; // Short duration for testing
     private static final int MAX_WAIT_TIME_SECONDS = 30; // Maximum time to wait for files to be created
-    
+
     private ProgramId testProgramId;
 
     @BeforeEach
     public void setUp() {
         // Initialize the mock time provider with current time
         mockTimeProvider = new MockTimeProviderService(Instant.now());
-        
+
         // Initialize the mock planning loader
         mockPlanningLoader = new MockMediaCapturePlanningLoader();
-        
-        // Configure the Guice injection for the test
-        Injector injector = createInjector(new AbstractModule() {
+
+        // Configure the HK2 injection for the test
+        ServiceLocator serviceLocator = createServiceLocator(new AbstractBinder() {
             @Override
             protected void configure() {
-                bind(IRLALCMediaCaptureService.class).to(RLALCMediaCaptureServiceImpl.class);
-                bind(IRecordingStateManagementService.class).to(ManifestFileBasedRecordingStateManagementService.class);
-                bind(IMediaCapturePlanningLoader.class).toInstance(mockPlanningLoader);
-                bind(IMediaRecorder.class).to(FFMpegRecorder.class);
-                bind(IPrtTimeProviderService.class).toInstance(mockTimeProvider);
+                bind(RLALCMediaCaptureServiceImpl.class).to(IRLALCMediaCaptureService.class);
+                bind(ManifestFileBasedRecordingStateManagementService.class).to(IRecordingStateManagementService.class);
+                bind(mockPlanningLoader).to(IMediaCapturePlanningLoader.class);
+                bind(FFMpegRecorder.class).to(IMediaRecorder.class);
+                bind(mockTimeProvider).to(IPrtTimeProviderService.class);
             }
         });
-        
-        mediaCaptureService = injector.getInstance(IRLALCMediaCaptureService.class);
+
+        mediaCaptureService = serviceLocator.getService(IRLALCMediaCaptureService.class);
     }
-    
+
     /**
      * Test recording with the real FFMpegRecorder.
      * This test will:
@@ -83,29 +83,29 @@ public class RLALCMediaCaptureServiceRealRecorderTest extends BaseRLALCMediaCapt
     public void testRealRecording() {
         logger.info("Using stream URL: {}", TEST_STREAM_URL);
         logger.info("Current time: {}", Instant.now());
-        
+
         // Clear any existing programs
         mockPlanningLoader.clearPrograms();
-        
+
         // Add a program that starts now
         long startTimeEpochSec = Instant.now().getEpochSecond();
         mockPlanningLoader.addProgram("Test Real Recording", TEST_STREAM_URL, startTimeEpochSec, TEST_DURATION_SECONDS, TEST_TIMEZONE);
-        
+
         // Get the program ID for later use
         testProgramId = mockPlanningLoader.getPrograms().get(0).getUuid();
         logger.info("Created program with ID: {}", testProgramId);
-        
+
         try {
             // Start media capture
             logger.info("Starting media capture");
             mediaCaptureService.startMediaCapture();
             logger.info("Media capture started");
-            
+
             // Wait for some time to allow chunks to be created
             // We'll check periodically to see if any chunks have been created
             logger.info("Waiting for chunks to be created (max {} seconds)", MAX_WAIT_TIME_SECONDS);
             boolean chunksCreated = waitForChunks(MAX_WAIT_TIME_SECONDS);
-            
+
             // Check if any chunks were created
             if (chunksCreated) {
                 logger.info("Chunks were created successfully");
@@ -113,7 +113,7 @@ public class RLALCMediaCaptureServiceRealRecorderTest extends BaseRLALCMediaCapt
                 logger.warn("No chunks were created within the timeout period");
                 // Don't fail the test, as external factors might prevent chunks from being created
             }
-            
+
             // Check recording status
             Map<ProgramId, RecordingStatus> statuses = mediaCaptureService.getRecordingStatusesForCurrentDay();
             if (statuses.containsKey(testProgramId)) {
@@ -124,13 +124,13 @@ public class RLALCMediaCaptureServiceRealRecorderTest extends BaseRLALCMediaCapt
             } else {
                 logger.warn("No recording status found for program ID: {}", testProgramId);
             }
-            
+
         } catch (Exception e) {
             logger.error("Error during test: {}", e.getMessage(), e);
             fail("Test failed with exception: " + e.getMessage());
         }
     }
-    
+
     /**
      * Wait for chunks to be created, checking periodically.
      * 
@@ -140,7 +140,7 @@ public class RLALCMediaCaptureServiceRealRecorderTest extends BaseRLALCMediaCapt
     private boolean waitForChunks(int maxWaitTimeSeconds) {
         long startTime = System.currentTimeMillis();
         long endTime = startTime + (maxWaitTimeSeconds * 1000L);
-        
+
         while (System.currentTimeMillis() < endTime) {
             try {
                 // Check if any chunks have been created
@@ -149,7 +149,7 @@ public class RLALCMediaCaptureServiceRealRecorderTest extends BaseRLALCMediaCapt
                     logger.info("Found recording chunks: {}", chunks);
                     return true;
                 }
-                
+
                 // Wait a bit before checking again
                 Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -161,7 +161,7 @@ public class RLALCMediaCaptureServiceRealRecorderTest extends BaseRLALCMediaCapt
                 // Continue waiting
             }
         }
-        
+
         return false;
     }
 }

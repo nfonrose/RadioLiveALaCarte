@@ -1,32 +1,38 @@
 package com.prtlabs.rlalc.backend.mediacapture.entrypoint;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.prtlabs.rlalc.backend.mediacapture.services.IRLALCMediaCaptureService;
+import com.prtlabs.rlalc.backend.mediacapture.entrypoint.embeddedrestserver.IEmbeddedRESTServerModule;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.IRLALCMediaCaptureService;
+import com.prtlabs.utils.logging.PrtLoggingUtils;
+import org.glassfish.hk2.api.ServiceLocator;
+import org.glassfish.hk2.utilities.ServiceLocatorUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Properties;
 
 /**
  * Entry point for the RLALC Media Capture Service.
  */
 public class EntryPoint {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(EntryPoint.class);
-    
+
     public static void main(String[] args) {
         try {
             logger.info("Starting RLALC Media Capture Service ...");
-            Properties props = System.getProperties();
 
-            // Create Guice injector
-            Injector injector = Guice.createInjector(new MediaCaptureServiceGuiceModule());
-            
+            // Create HK2 ServiceLocator
+            ServiceLocator serviceLocator = ServiceLocatorUtilities.createAndPopulateServiceLocator();
+            ServiceLocatorUtilities.bind(serviceLocator, new MediaCaptureServiceHK2Module());
+
             // Get the service instance and start it
-            IRLALCMediaCaptureService service = injector.getInstance(IRLALCMediaCaptureService.class);
+            IRLALCMediaCaptureService service = serviceLocator.getService(IRLALCMediaCaptureService.class);
             service.startMediaCapture();
-            
+
+            // Start the EmbeddedRESTServerModule
+            PrtLoggingUtils.interceptJULLogsAndForwardToSLF4J();
+            IEmbeddedRESTServerModule managementModule = serviceLocator.getService(IEmbeddedRESTServerModule.class);
+            managementModule.start(9796, "RLALC Media Capture Server");
+
             logger.info(" -> RLALC Media Capture Service started successfully. On hold until killed");
         } catch (Exception e) {
             logger.error("  -> Error starting RLALC Media Capture Service", e);

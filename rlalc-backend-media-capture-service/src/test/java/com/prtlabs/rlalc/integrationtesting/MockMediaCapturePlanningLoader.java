@@ -1,7 +1,7 @@
 package com.prtlabs.rlalc.integrationtesting;
 
-import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.IMediaCapturePlanningLoader;
-import com.prtlabs.rlalc.backend.mediacapture.services.recordings.planning.dto.MediaCapturePlanningDTO;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.planning.IMediaCapturePlanningLoader;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.planning.dto.MediaCapturePlanningDTO;
 import com.prtlabs.rlalc.domain.ProgramDescriptorDTO;
 import com.prtlabs.rlalc.domain.ProgramId;
 

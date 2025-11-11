@@ -1,12 +1,25 @@
 <configuration>
 
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <appender name="CONSOLE_INFO_ONLY" class="ch.qos.logback.core.ConsoleAppender">
         <withJansi>true</withJansi>
         <encoder>
             <pattern>%d{HH:mm:ss.SSS} %highlight(%5p) --- %gray([%15.15t]) %white(%-40.40logger{39}) : %msg%n%ex</pattern>
         </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
     </appender>
-    
+
+    <appender name="CONSOLE_WARN_ONLY" class="ch.qos.logback.core.ConsoleAppender">
+        <withJansi>true</withJansi>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} %highlight(%5p) --- %gray([%15.15t]) %white(%-40.40logger{39}) : %msg%n%ex</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+    </appender>
+
     <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>logs/rlalc-media-capture.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -19,12 +32,15 @@
     </appender>
 
     <!-- Define at which level we log -->
-    <!--  - Only WARN by default -->
-    <root level="WARN">
-        <appender-ref ref="CONSOLE" />
+    <!--  - Only WARN message sent to the console, and INFO to file -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE_WARN_ONLY" />
         <appender-ref ref="FILE" />
     </root>
-    <!--  - But as soon as DEBUG for our Application specific loggers -->
-    <logger name="com.prtlabs" level="DEBUG" />
+    <!--  - Only INFO messages sent to the console, and DEBUG to file -->
+    <logger name="com.prtlabs" level="DEBUG" additivity="false">
+        <appender-ref ref="CONSOLE_INFO_ONLY" />
+        <appender-ref ref="FILE" />
+    </logger>
 
 </configuration>
