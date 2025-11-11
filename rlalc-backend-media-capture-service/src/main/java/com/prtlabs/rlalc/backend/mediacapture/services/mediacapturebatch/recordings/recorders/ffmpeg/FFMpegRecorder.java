@@ -85,6 +85,7 @@ public class FFMpegRecorder implements IMediaRecorder {
             //  - Build the ffmpeg command
             String ffmpegCommand = String.join(" ", List.of(
                 "ffmpeg",
+                "-re",                                                  // Force realtime pacing instead of letting ffmpeg try to record as fast as it can if the server can deliver (realtime pacing is what we want when we record live radio)
                 "-t", ""+programDescriptor.getDurationSeconds(),
                 "-i", "\"" + programDescriptor.getStreamURL() + "\"",
                 "-c:a", "libmp3lame",
