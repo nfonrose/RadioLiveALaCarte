@@ -469,3 +469,18 @@ Replace Guice with HK2 for Jersey 3 compatibility.
 
 ### ----------------------------
 Can you implement RLALCMediaCaptureServiceManagementAPIServiceImpl.addOneShotTestRecording() and  IRLALCMediaCaptureService.addOneTimeMediaCapture ?
+
+### ----------------------------
+There is an error when calling the API with `curl -s http://localhost:9796/api/management/addOneShotTestRecording -X POST -H "Content-Type: application/json" -d '{"title":"France Inter - Test recording","streamURL":"http://direct.franceinter.fr/live/franceinter-midfi.mp3","timeZone":"Europe/Paris"}'`
+
+Here is the error
+```
+14:30:19.778  INFO --- [nio-9796-exec-2] iaCaptureServiceManagementAPIServiceImpl : Adding one-shot test recording [{"uuid":"1e69fe53-e741-4a14-8acd-1427a0bdda7c","title":"France Inter - Test recording","streamURL":"http://direct.franceinter.fr/live/franceinter-midfi.mp3","startTimeUTCEpochSec":1762867820,"durationSeconds":15,"timeZone":"Europe/Paris"}]
+14:30:19.779  INFO --- [nio-9796-exec-2] p.r.b.m.s.m.RLALCMediaCaptureServiceImpl : Adding one-time media capture for program=[France Inter - Test recording] with UUID [ProgramId[uuid=1e69fe53-e741-4a14-8acd-1427a0bdda7c]] at [1762867820] for [15] seconds
+14:30:19.796  INFO --- [nio-9796-exec-2] p.r.b.m.s.m.RLALCMediaCaptureServiceImpl :     -> One-time media capture scheduled for stream [France Inter - Test recording] at [Tue Nov 11 14:30:20 CET 2025] for a duration of [15]secs
+14:30:19.796  INFO --- [nio-9796-exec-2] iaCaptureServiceManagementAPIServiceImpl :   -> Successfully scheduled one-shot test recording with ID [ProgramId[uuid=1e69fe53-e741-4a14-8acd-1427a0bdda7c]]
+14:30:20.006 ERROR --- [eduler_Worker-1] org.quartz.core.JobRunShell              : Job DEFAULT.capture-ProgramId[uuid=1e69fe53-e741-4a14-8acd-1427a0bdda7c] threw an unhandled Exception: 
+java.lang.NullPointerException: Cannot invoke "org.quartz.Job.execute(org.quartz.JobExecutionContext)" because "job" is null
+        at org.quartz.core.JobRunShell.run(JobRunShell.java:202)
+        at org.quartz.simpl.SimpleThreadPool$WorkerThread.run(SimpleThreadPool.java:573)
+```

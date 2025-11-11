@@ -8,6 +8,9 @@ import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordi
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.planning.loaders.file.ConfigFileBased_MediaCapturePlanningLoader;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.recorders.IMediaRecorder;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.recorders.ffmpeg.FFMpegRecorder;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.scheduling.quartzjobs.MediaCaptureJob;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.scheduling.quartzjobs.MediaCapturePendingStateInitializationJob;
+import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.scheduling.quartzjobs.MediaCaptureStopJob;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.statemanagement.IRecordingStateManagementService;
 import com.prtlabs.rlalc.backend.mediacapture.services.mediacapturebatch.recordings.statemanagement.manifests.ManifestFileBasedRecordingStateManagementService;
 import com.prtlabs.rlalc.backend.mediacapture.utils.RLALCLocalTimeZoneTimeHelper;
@@ -21,7 +24,7 @@ import org.quartz.spi.JobFactory;
  * HK2 module for the RadioLiveALaCarte Media Capture service.
  */
 public class MediaCaptureServiceHK2Module extends AbstractBinder {
-    
+
     @Override
     protected void configure() {
         // Technical bindings
@@ -37,6 +40,12 @@ public class MediaCaptureServiceHK2Module extends AbstractBinder {
         bind(FFMpegRecorder.class).to(IMediaRecorder.class);
         bind(RLALCLocalTimeZoneTimeHelper.class).to(RLALCLocalTimeZoneTimeHelper.class);
         bind(PrtHK2QuartzJobFactory.class).to(PrtHK2QuartzJobFactory.class);
+
+        // Register Quartz job classes
+        bind(MediaCaptureJob.class).to(MediaCaptureJob.class);
+        bind(MediaCaptureStopJob.class).to(MediaCaptureStopJob.class);
+        bind(MediaCapturePendingStateInitializationJob.class).to(MediaCapturePendingStateInitializationJob.class);
+
         //  - Management of the MediaCaptureService
         bind(TomcatJerseyEmbeddedRESTServerModule.class).to(IEmbeddedRESTServerModule.class);
     }
