@@ -152,14 +152,14 @@ This glossary helps disambiguate terms which might have different meanings in di
 
 ## RadioLiveALaCarte
 
-#### User (RLAC)
-An administrator of the RadioLiveALaCarte platform that can perform actions on it.
-
 #### Chunk
 Media file with a standardized (usually short) length (10s or 30s most of the time) captured, stored and processed by the RLALC platform.
 
 #### Media Datastore
-The component in charge of storing media files and associated metadata and annotation, and in charge of allowing requests to be made on it.
+The component in charge of storing media files and associated metadata and annotations. This component exposes an API to allow searching for chunks based on metadata attributes.
+
+#### User (RLAC)
+An administrator of the RadioLiveALaCarte platform that can perform actions on it.
 
 
 
