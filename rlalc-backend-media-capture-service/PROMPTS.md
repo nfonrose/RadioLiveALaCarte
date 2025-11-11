@@ -484,3 +484,13 @@ java.lang.NullPointerException: Cannot invoke "org.quartz.Job.execute(org.quartz
         at org.quartz.core.JobRunShell.run(JobRunShell.java:202)
         at org.quartz.simpl.SimpleThreadPool$WorkerThread.run(SimpleThreadPool.java:573)
 ```
+
+
+
+
+## -------------------------------------------------------------------------------------------------------------------
+
+### ----------------------------
+Add a very basic "RLALC MediaCaptureService Management" HTML UI that allows calls to the RLALCMediaCaptureServiceManagement API.
+
+Make it served by the EmbeddedRESTServer StaticContentServlet please

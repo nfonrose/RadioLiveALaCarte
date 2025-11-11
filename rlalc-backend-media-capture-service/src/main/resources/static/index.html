@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RLALC MediaCaptureService Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        h1, h2, h3 {
+            color: #333;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        form {
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 10px;
+            align-items: center;
+        }
+        label {
+            font-weight: bold;
+        }
+        input, select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 100%;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            grid-column: 2;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+        .success {
+            color: green;
+            margin-top: 10px;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,.3);
+            border-radius: 50%;
+            border-top-color: #000;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>RLALC MediaCaptureService Management</h1>
+        
+        <div class="section">
+            <h2>Current Planning and Scheduled Jobs</h2>
+            <div id="current-planning-loading">Loading...</div>
+            <div id="current-planning-error" class="error" style="display: none;"></div>
+            
+            <div id="current-planning-content" style="display: none;">
+                <h3>Loaded Planning</h3>
+                <table id="loaded-planning-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Stream URL</th>
+                            <th>Start Time</th>
+                            <th>Duration (sec)</th>
+                            <th>UUID</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                
+                <h3>Scheduled Jobs</h3>
+                <table id="scheduled-jobs-table">
+                    <thead>
+                        <tr>
+                            <th>Stream Name</th>
+                            <th>Stream URL</th>
+                            <th>Next Fire Time</th>
+                            <th>Job Key</th>
+                            <th>Job Group</th>
+                            <th>UUID</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                
+                <button id="refresh-planning-btn">Refresh</button>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>Add One-Shot Test Recording</h2>
+            <form id="add-recording-form">
+                <label for="title">Title:</label>
+                <input type="text" id="title" name="title" required>
+                
+                <label for="streamURL">Stream URL:</label>
+                <input type="url" id="streamURL" name="streamURL" required>
+                
+                <label for="timeZone">Time Zone:</label>
+                <select id="timeZone" name="timeZone" required>
+                    <option value="Europe/Paris">Europe/Paris</option>
+                    <option value="America/New_York">America/New_York</option>
+                    <option value="Asia/Tokyo">Asia/Tokyo</option>
+                    <option value="UTC">UTC</option>
+                </select>
+                
+                <label for="durationSeconds">Duration (sec):</label>
+                <input type="number" id="durationSeconds" name="durationSeconds" value="15" min="1">
+                
+                <button type="submit">Add Recording</button>
+            </form>
+            <div id="add-recording-result" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <script>
+        // Base API URL
+        const API_BASE_URL = '/api/management';
+        
+        // Function to format date from ISO string
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+        
+        // Function to get current planning
+        async function getCurrentPlanning() {
+            const loadingElement = document.getElementById('current-planning-loading');
+            const errorElement = document.getElementById('current-planning-error');
+            const contentElement = document.getElementById('current-planning-content');
+            
+            loadingElement.style.display = 'block';
+            errorElement.style.display = 'none';
+            contentElement.style.display = 'none';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/planning/current`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Populate loaded planning table
+                const loadedPlanningTable = document.querySelector('#loaded-planning-table tbody');
+                loadedPlanningTable.innerHTML = '';
+                
+                if (data.loadedPlanning && data.loadedPlanning.length > 0) {
+                    data.loadedPlanning.forEach(program => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${program.title || 'N/A'}</td>
+                            <td>${program.streamURL || 'N/A'}</td>
+                            <td>${program.startTimeUTCEpochSec ? new Date(program.startTimeUTCEpochSec * 1000).toLocaleString() : 'N/A'}</td>
+                            <td>${program.durationSeconds || 'N/A'}</td>
+                            <td>${program.uuid || 'N/A'}</td>
+                        `;
+                        loadedPlanningTable.appendChild(row);
+                    });
+                } else {
+                    const row = document.createElement('tr');
+                    row.innerHTML = '<td colspan="5">No programs in the current planning</td>';
+                    loadedPlanningTable.appendChild(row);
+                }
+                
+                // Populate scheduled jobs table
+                const scheduledJobsTable = document.querySelector('#scheduled-jobs-table tbody');
+                scheduledJobsTable.innerHTML = '';
+                
+                if (data.scheduledJobs && data.scheduledJobs.length > 0) {
+                    data.scheduledJobs.forEach(job => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${job.streamName || 'N/A'}</td>
+                            <td>${job.streamURL || 'N/A'}</td>
+                            <td>${formatDate(job.nextFireTime)}</td>
+                            <td>${job.jobKey || 'N/A'}</td>
+                            <td>${job.jobGroup || 'N/A'}</td>
+                            <td>${job.uuid || 'N/A'}</td>
+                        `;
+                        scheduledJobsTable.appendChild(row);
+                    });
+                } else {
+                    const row = document.createElement('tr');
+                    row.innerHTML = '<td colspan="6">No scheduled jobs</td>';
+                    scheduledJobsTable.appendChild(row);
+                }
+                
+                loadingElement.style.display = 'none';
+                contentElement.style.display = 'block';
+            } catch (error) {
+                console.error('Error fetching current planning:', error);
+                errorElement.textContent = `Error: ${error.message}`;
+                loadingElement.style.display = 'none';
+                errorElement.style.display = 'block';
+            }
+        }
+        
+        // Function to add one-shot test recording
+        async function addOneShotTestRecording(formData) {
+            const resultElement = document.getElementById('add-recording-result');
+            resultElement.innerHTML = '<div class="loading"></div> Adding recording...';
+            resultElement.className = '';
+            
+            try {
+                const payload = {
+                    title: formData.get('title'),
+                    streamURL: formData.get('streamURL'),
+                    timeZone: formData.get('timeZone'),
+                    durationSeconds: parseInt(formData.get('durationSeconds')),
+                    recorderSpecificParameters: {}
+                };
+                
+                const response = await fetch(`${API_BASE_URL}/addOneShotTestRecording`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                
+                resultElement.textContent = 'Recording added successfully! It will start in 1 second.';
+                resultElement.className = 'success';
+                
+                // Refresh the current planning after a short delay
+                setTimeout(getCurrentPlanning, 2000);
+            } catch (error) {
+                console.error('Error adding recording:', error);
+                resultElement.textContent = `Error: ${error.message}`;
+                resultElement.className = 'error';
+            }
+        }
+        
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Load current planning on page load
+            getCurrentPlanning();
+            
+            // Refresh button
+            document.getElementById('refresh-planning-btn').addEventListener('click', getCurrentPlanning);
+            
+            // Add recording form submission
+            document.getElementById('add-recording-form').addEventListener('submit', (event) => {
+                event.preventDefault();
+                const formData = new FormData(event.target);
+                addOneShotTestRecording(formData);
+            });
+        });
+    </script>
+</body>
+</html>
