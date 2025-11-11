@@ -6,7 +6,7 @@
 
 ## Role
 
-Enrich the media-database, for each [Segment](../README.md#segment-rlac), with [Program](../README.md#program) and [Program-segment](../README.md#program-segment-aka-segment-gmfm) information based on AI based audio analysis.
+Enrich the media-database, for each [Segment](../README.md#chunk), with [Program](../README.md#program) and [Program-segment](../README.md#segment) information based on AI based audio analysis.
 
 Employs AI techniques (e.g., voice recognition, text analysis) to generate advanced metadata like:
 - *segment-real-programid*

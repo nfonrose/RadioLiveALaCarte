@@ -67,7 +67,7 @@ A storage layer built on **LanceDB** and **RustFS**, responsible for:
 See [rlalc-backend-media-datastore/README-rlalc-backend-media-datastore.md](rlalc-backend-media-datastore/README-rlalc-backend-media-datastore.md) for details.
 
 ### rlalc-backend-media-labeler-...
-A family of batch components that generate metadata and annotations for [Segments](./README.md#segment-rlac). These metadata and annotations can be embeddings (e.g., audio signatures, textual meaning vectors, ...) or any other type (text, URLs, ...). Examples include:
+A family of batch components that generate metadata and annotations for [Segments](./README.md#chunk). These metadata and annotations can be embeddings (e.g., audio signatures, textual meaning vectors, ...) or any other type (text, URLs, ...). Examples include:
 - **rlalc-backend-media-labeler-basic-schedule**: Uses official radio program schedules and recording timestamps to assign metadata like *'segment-approx-programid'*, *'segment-approx-programsegmentid'* and *'segment-time-recordingtimestart'*.
 - **rlalc-backend-media-labeler-ai-audio-analysis**: Employs AI techniques (e.g., voice recognition, text analysis) to generate advanced metadata like *'segment-time-realtimestart'*, *'segment-real-programid'*, *'segment-real-progsegmentid'* or *'segment-content-summary'* and *'segment-content-transcript'*.
 - ...
@@ -155,8 +155,8 @@ This glossary helps disambiguate terms which might have different meanings in di
 #### User (RLAC)
 An administrator of the RadioLiveALaCarte platform that can perform actions on it.
 
-#### Segment (RLAC) aka Chunk
-Media file with a standardize usually short length (10s or 30s most of the time) captured, stored and processed by the RLALC platform.
+#### Chunk
+Media file with a standardized (usually short) length (10s or 30s most of the time) captured, stored and processed by the RLALC platform.
 
 #### Media Datastore
 The component in charge of storing media files and associated metadata and annotation, and in charge of allowing requests to be made on it.
@@ -170,13 +170,13 @@ The component in charge of storing media files and associated metadata and annot
 A person using the GroovyMorningFM app to customize the way they listen to live radio.
 
 #### Custom schedule
-The schedule created by a [user](./README.md#user-gmfm). It is always based on a [predefined schedule](./README.md#predefined-schedule-of-a-program) of a Radio, and customized by switching some [Segments](./README.md#program-segment-aka-segment-gmfm) with others.
+The schedule created by a [user](./README.md#user-gmfm). It is always based on a [predefined schedule](./README.md#predefined-schedule-of-a-program) of a Radio, and customized by switching some [Segments](./README.md#segment) with others.
 
 #### Program (aka Emission FR)
-A consistent set of [Segments](./README.md#program-segment-aka-segment-gmfm) which usually have a clearly defined title, time of start, duration and cadence (daily, only on Saturdays, ...)
+A consistent set of [Segments](./README.md#segment) which usually have a clearly defined title, time of start, duration and cadence (daily, only on Saturdays, ...)
 
 #### Predefined schedule (of a Program)
-The order and duration of all the [Segments](./README.md#program-segment-aka-segment-gmfm) that make up a [Program](./README.md#program).
+The order and duration of all the [Segments](./README.md#segment) that make up a [Program](./README.md#program).
 
 #### Program-segment aka Segment (GMFM) (aka Chronique FR)
 Sub-section inside a [Program](./README.md#program) (for instance, the "3 minutes long economic segment" in the "France Inter" 7am-10am morning program).
