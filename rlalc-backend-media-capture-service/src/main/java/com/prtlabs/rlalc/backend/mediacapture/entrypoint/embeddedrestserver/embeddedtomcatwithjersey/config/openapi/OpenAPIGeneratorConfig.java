@@ -38,7 +38,7 @@ public class OpenAPIGeneratorConfig extends HttpServlet {
                     .description("PrtLabs RadioLiveALaCarte API")
                     .termsOfService("https://tee-xprmnts.com/terms/")
                     .contact(new Contact()
-                        .email("hello@groovymorning.tee-xprmt.com"))
+                        .email("hello@groovymorningfm.tee-xprmnt.ovh"))
                     .license(new License()
                         .name("MIT License")
                         .url("https://mit-license.org/"))

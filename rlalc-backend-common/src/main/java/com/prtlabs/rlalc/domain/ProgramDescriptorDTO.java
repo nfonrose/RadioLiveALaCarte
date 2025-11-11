@@ -2,6 +2,7 @@ package com.prtlabs.rlalc.domain;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -34,7 +35,7 @@ public class ProgramDescriptorDTO {
     @JsonProperty("streamURL")                  private final String streamURL;
     @JsonProperty("startTimeUTCEpochSec")       private final long startTimeUTCEpochSec;
     @JsonProperty("durationSeconds")            private final long durationSeconds;
-    @JsonProperty("timeZone")                   private final ZoneId timeZone;
+    @JsonProperty("timeZone") @Schema(type = "string") private final ZoneId timeZone;
     @JsonProperty("recorderSpecificParameters") private final Map<String, String> recorderSpecificParameters;
 
     /**
